@@ -15,7 +15,7 @@ module.exports = function(app) {
     console.log(' ');
   }
   
-  utils.enableRandomPortData = function(){
+  utils.randomSerialData = function(){
     setInterval(function() {
       var data = [];
       for(var i = 0; i < 15; i++) data.push(Math.floor(Math.random()*256));

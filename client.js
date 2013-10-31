@@ -77,7 +77,7 @@ module.exports = function(){
     socket.socket.connect();
   }, 10000);
 
-  socket = io.connect('http://localhost:8080', { // can use standard config file or args later
+  socket = io.connect('http://ssdl-lambda-new.stanford.edu', { // can use standard config file or args later
     'auto connect': false,
     'reconnect': true,
     'reconnection limit': 10000
@@ -109,7 +109,7 @@ module.exports = function(){
 
 
 
-  utils.enableRandomPortData(); // Generate random serial data for testing
+  utils.randomSerialData(); // Generate random serial data for testing
   
   
 
