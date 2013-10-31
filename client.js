@@ -35,10 +35,11 @@ module.exports = function(){
 
   function portConnect() {
     com.list(function (err, ports) {
+      //utils.log('List of available ports:');
       ports.forEach(function(_port) {
-        if(_port.pnpId.indexOf('asdf') >= 0 && _port.pnpId.indexOf('jkl') >= 0) {
+        if(_port.pnpId.indexOf('VID_0403') >= 0 && _port.pnpId.indexOf('PID_F020') >= 0) {
           port = new com.SerialPort(_port.comName, { // '/dev/tty-usbserial1'
-            baudrate: 57600,
+            baudrate: 9600,
             parser: com.parsers.raw
           }, false)
           .on('open', function() {
@@ -49,15 +50,21 @@ module.exports = function(){
           })
           .on('close', function(data) {
             port.connected = false;
+            event.removeListener('serialWrite',handleSerialWrite);
+          })
+          .on('error', function(data) {
+            port.connected = false;
             portRetry = setInterval(portRetryFunc, 10000);
             event.removeListener('serialWrite',handleSerialWrite);
           })
-          .on('data', function(data) {
-            utils.log('Serial data',data);
+          .on('data', function(buf) {
+            utils.log('Serial data',buf);
+            var data = [];
+            for(var i = 0; i < buf.length; i++) data.push(buf[i]);
             event.emit('serialRead',data);
           });
+          port.open();
         }
-        //utils.log('List of available ports');
         //console.log('Port name: ' + _port.comName);
         //console.log('Port pnpid: ' + _port.pnpId);
         //console.log('Port mfgr: ' + _port.manufacturer);
@@ -77,7 +84,7 @@ module.exports = function(){
     socket.socket.connect();
   }, 10000);
 
-  socket = io.connect('http://ssdl-lambda-new.stanford.edu', { // can use standard config file or args later
+  socket = io.connect('http://ssdl-lambda-new.stanford.edu:8080/', { // can use standard config file or args later
     'auto connect': false,
     'reconnect': true,
     'reconnection limit': 10000
@@ -109,7 +116,7 @@ module.exports = function(){
 
 
 
-  utils.randomSerialData(); // Generate random serial data for testing
+  //utils.randomSerialData(); // Generate random serial data for testing
   
   
 
@@ -128,9 +135,10 @@ module.exports = function(){
   
   
   function handleSerialWrite(data) { // Assumes data is buffer array of bytes.
+    return; // do not write to serial. not ready for primetime
     port.write(data, function(err, results) {
-      utils.log('err ' + err);
-      utils.log('results ' + results);
+      if(err) utils.log('err ' + err);
+      if(results != 0) utils.log('results ' + results);
     });
   }
 
@@ -141,7 +149,7 @@ module.exports = function(){
     if(port.connected) {
       make_rapbytes.process(RAP,function(rapbytes) {
           handleSerialWrite(rapbytes);
-          utils.log('rapbytes written to serial', rapbytes);
+          utils.log('Ready to write rapbytes to serial', rapbytes);
         });
     } else {
       utils.log('RAP not processed - serial port closed');

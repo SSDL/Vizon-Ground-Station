@@ -2,8 +2,12 @@ module.exports = function(app) {
   var event = app.event;
 
   function make_rapbytes(RAP,callback) {
+    var _this = this;
+    this.selfevent = new (require('events').EventEmitter);
+	
     this.rapbytes = [];
     this.callback = callback;
+	
     this.RAP = RAP;
     this.k = 0;
     this.nextFunc = this.func.disassemble;
@@ -17,7 +21,7 @@ module.exports = function(app) {
   }
   
   make_rapbytes.process = function(RAP,callback){
-    new RAP_maker(RAP,callback);
+    new make_rapbytes(RAP,callback);
   }
   
   // namespace placeholder
