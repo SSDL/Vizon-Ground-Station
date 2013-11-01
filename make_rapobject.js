@@ -9,7 +9,7 @@ module.exports = function(app) {
     this.rapbytes = rapbytes;
     this.callback = callback;
     
-    this.RAP = {};
+    this.rap = {};
     this.k = 0;
     this.nextFunc = this.func.startsync;
     
@@ -34,7 +34,7 @@ module.exports = function(app) {
       app.utils.log('RAP dropped - preamble wrong');
       return
     }
-    app.utils.augmentChecksums(this.RAP,this.rapbytes[0],this.rapbytes[1]); 
+    app.utils.augmentChecksums(this.rap,this.rapbytes[0],this.rapbytes[1]); 
     this.nextFunc = this.func.raplength;
     this.selfevent.emit('nextFunc');
   }
@@ -42,43 +42,43 @@ module.exports = function(app) {
   // RAP field 2, byte 3, idx[2]
   make_rapobject.prototype.func.raplength = function() {
     //this.k = 2;
-    //this.RAP.test1 = this.rapbytes[this.k++];
+    //this.rap.test1 = this.rapbytes[this.k++];
     //this.carryover = {a:6};
     
-    this.RAP.length = this.rapbytes[2];
-    app.utils.augmentChecksums(this.RAP,this.rapbytes[2]); 
+    this.rap.length = this.rapbytes[2];
+    app.utils.augmentChecksums(this.rap,this.rapbytes[2]); 
     this.nextFunc = this.func.to;
     this.selfevent.emit('nextFunc');
   }
   
   // RAP field 3, bytes 4,5, idx[3,4]
   make_rapobject.prototype.func.to = function() {
-    this.RAP.to = app.utils.bytesToNumber(this.rapbytes[3],this.rapbytes[4]); 
-    app.utils.augmentChecksums(this.RAP,this.rapbytes[3],this.rapbytes[4]); 
+    this.rap.to = app.utils.bytesToNumber(this.rapbytes[3],this.rapbytes[4]); 
+    app.utils.augmentChecksums(this.rap,this.rapbytes[3],this.rapbytes[4]); 
     this.nextFunc = this.func.toflags;
     this.selfevent.emit('nextFunc');
   }
   
   // RAP field 4, byte 6, idx[5]
   make_rapobject.prototype.func.toflags = function(){
-    this.RAP.toflags = this.rapbytes[5];
-    app.utils.augmentChecksums(this.RAP,this.rapbytes[5]); 
+    this.rap.toflags = this.rapbytes[5];
+    app.utils.augmentChecksums(this.rap,this.rapbytes[5]); 
     this.nextFunc = this.func.from;
     this.selfevent.emit('nextFunc');
   }
   
   // RAP field 5, bytes 7,8, idx[6,7]
   make_rapobject.prototype.func.from = function() {
-    this.RAP.from = app.utils.bytesToNumber(this.rapbytes[6],this.rapbytes[7]); 
-    app.utils.augmentChecksums(this.RAP,this.rapbytes[6],this.rapbytes[7]); 
+    this.rap.from = app.utils.bytesToNumber(this.rapbytes[6],this.rapbytes[7]); 
+    app.utils.augmentChecksums(this.rap,this.rapbytes[6],this.rapbytes[7]); 
     this.nextFunc = this.func.fromflags;
     this.selfevent.emit('nextFunc');
   }
   
   // RAP field 6, bytes 9, idx[8]
   make_rapobject.prototype.func.fromflags = function(){
-    this.RAP.fromflags = this.rapbytes[8];
-    app.utils.augmentChecksums(this.RAP,this.rapbytes[8]); 
+    this.rap.fromflags = this.rapbytes[8];
+    app.utils.augmentChecksums(this.rap,this.rapbytes[8]); 
     this.nextFunc = this.func.TAP;
     this.selfevent.emit('nextFunc');
   }
@@ -92,8 +92,8 @@ module.exports = function(app) {
     var tapbytes = this.rapbytes.slice(10,this.rapbytes.length-3);
     var appid = tapbytes[0];
     var _this = this;
-    var callback = function(TAP) {
-      _this.RAP.TAP = TAP; // add the tap to the RAP
+    var callback = function(tap) {
+      _this.rap.tap = tap; // add the RAP to the RAP
       _this.selfevent.emit('nextFunc'); // have the RAP event emitter trigger the next function
     }
     this.nextFunc = this.func.checksum;
@@ -102,8 +102,8 @@ module.exports = function(app) {
   
   // RAP field 8, bytes N-1,N, idx[len-2,len-1]
   make_rapobject.prototype.func.checksum = function() {
-    if(false && (this.RAP.currcksmA == this.RAP.sentcksmA && 
-                    this.RAP.currcksmB == this.RAP.sentcksmB))  {
+    if(false && (this.rap.currcksmA == this.rap.sentcksmA && 
+                    this.rap.currcksmB == this.rap.sentcksmB))  {
       app.utils.log('RAP dropped - checksum wrong');
       return
     }
@@ -112,7 +112,7 @@ module.exports = function(app) {
   }
   
   make_rapobject.prototype.func.done = function(){
-    if(this.callback) this.callback(this.RAP);
+    if(this.callback) this.callback(this.rap);
   }
   
   return make_rapobject;

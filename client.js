@@ -1,20 +1,17 @@
 module.exports = function(){
   var os = require("os")
+    , express = require('express')
+    , app = express()
     , com = require("serialport")
     , io = require('socket.io-client')
-    , event = new (require('events').EventEmitter)
+    , crypto = require('crypto')
+    , event = app.event = new (require('events').EventEmitter)
+    , config = app.config = require('./config.js')(app)
 
     // placeholder objects. thse must exist here so that function callbacks can reference them
-    , port = {}
-    , socket = {}
+    , port = app.port = {}
+    , socket = app.socket = {}
     , serialReadBuffer = []
-    
-    // object package, used to pass into modules using single variable by reference
-    , app = {
-        event: event,
-        port: port,
-        socket: socket
-      }
 
   // tools and utilities
     , make_rapobject = require('./make_rapobject.js')(app)
@@ -37,7 +34,7 @@ module.exports = function(){
     com.list(function (err, ports) {
       //utils.log('List of available ports:');
       ports.forEach(function(_port) {
-        if(_port.pnpId.indexOf('VID_0403') >= 0 && _port.pnpId.indexOf('PID_F020') >= 0) {
+        if(_port.comName== app.config.port || (_port.pnpId.indexOf() >= 0 && _port.pnpId.indexOf(app.config.port.vid) >= 0)) {
           port = new com.SerialPort(_port.comName, { // '/dev/tty-usbserial1'
             baudrate: 9600,
             parser: com.parsers.raw
@@ -84,11 +81,7 @@ module.exports = function(){
     socket.socket.connect();
   }, 10000);
 
-  socket = io.connect('http://ssdl-lambda-new.stanford.edu:8080/', { // can use standard config file or args later
-    'auto connect': false,
-    'reconnect': true,
-    'reconnection limit': 10000
-  })
+  socket = io.connect(app.config.ctrl.uri, app.config.ctrl.options)
   // handle standard socket events
   .on('connect', function() {
     clearInterval(socketRetry);
@@ -100,15 +93,18 @@ module.exports = function(){
     utils.log('Connection closed');
     event.removeListener('serialRead',handleSerialRead);
   })
-  .on('connecting', function() { utils.log('Connecting to server...'); })
+  .on('connecting', function() { utils.log('Connecting to Control Center'); })
   .on('connect_failed', function() { utils.log('Connection failed'); })
   .on('reconnecting', function() { utils.log('Attempting to reconnect...'); })
   .on('reconnect_failed', function() { utils.log('Reconnect failed'); })
 
   // handle custom socket events
-  .on('message', function(data){ utils.log('Message from server: ' + data); })
-  .on('RAP', function(data){
-    handleSocketRAP(data);
+  .on('message', function(data){ utils.log('Control Center message: ' + data); })
+  .on('NAP:INFO', function(data){
+    utils.log('Control Center INFO: ' + data)
+  })
+  .on('NAP:RAP', function(nap){
+    handleSocketRAP(nap.rap);
   });
 
   socket.socket.connect(); // trust me, this is correct
@@ -116,7 +112,7 @@ module.exports = function(){
 
 
 
-  //utils.randomSerialData(); // Generate random serial data for testing
+  utils.randomSerialData(); // Generate random serial data for testing
   
   
 
@@ -124,10 +120,18 @@ module.exports = function(){
     serialReadBuffer.extend(data); // Push all elements in data onto serialReadBuffer in place
     for(var i = 1; i < serialReadBuffer.length-1; i++) { // Do not search at start of array. 
       if(serialReadBuffer[i] == 0xAB && serialReadBuffer[i+1] == 0xCD) { // found sync
-        make_rapobject.process(serialReadBuffer.splice(0,i),function(RAP) {
-          socket.emit('RAP',RAP);
-          utils.log('RAP transmitted to server', RAP);
-        }); // remove and process bytes 0 to i, then transmit the completed rap
+        make_rapobject.process(serialReadBuffer.splice(0,i),function(rap) {
+          var nap = {
+            gsid: app.config.gsid,
+            mid: 314, //rap.tap.mid,
+            payload: {
+              tap: rap.tap
+            }
+          }
+          if(app.config.securekey) signNAP(nap);
+          socket.emit('NAP:TAP',nap);
+          utils.log('NAP:TAP transmitted to server', nap);
+        });
         return;
       }
     }
@@ -154,6 +158,25 @@ module.exports = function(){
     } else {
       utils.log('RAP not processed - serial port closed');
     }
+  }
+  
+  
+  function signNAP(NAP) {
+    NAP.signature = {
+      alg: 'sha1',
+      enc: 'base64'
+    };
+    NAP.signature.hmac = crypto.createHmac(NAP.signature.alg, app.config.securekey)
+      .update(JSON.stringify(NAP.payload))
+      .digest(NAP.signature.enc);
+  }
+  
+  
+  function verifyNAP(NAP) {
+    var hmac = crypto.createHmac(NAP.signature.alg, app.config.securekey)
+      .update(JSON.stringify(NAP.payload))
+      .digest(NAP.signature.enc);
+    return (NAP.signature.hmac == hmac)
   }
 
 }();

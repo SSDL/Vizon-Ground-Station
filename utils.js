@@ -10,9 +10,12 @@ module.exports = function(app) {
   
   var utils =  {};
   utils.log = function(str,data) {
+    if(app.config.dev && data) console.log(' ');
     console.log((new Date()).toISOString() + ' - ' + str);
-    if(data) console.log(data);
-    console.log(' ');
+    if(app.config.dev && data) {
+      console.log(data);
+      console.log(' ');
+    }
   }
   
   utils.randomSerialData = function(){

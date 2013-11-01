@@ -9,7 +9,7 @@ module.exports = function(app) {
     this.tapbytes = tapbytes;
     this.callback = callback;
     
-    this.TAP = {};
+    this.tap = {};
     this.k = 0;
     this.nextFunc = this.func.test;
     
@@ -28,14 +28,14 @@ module.exports = function(app) {
   make_tapobject_appid1.prototype.func = {}
   
   make_tapobject_appid1.prototype.func.test = function(){
-    this.TAP.appID = this.tapbytes[0];
-    this.TAP.test = Math.floor(Math.random()*256);
+    this.tap.typeid = this.tapbytes[0];
+    this.tap.demo = Math.floor(Math.random()*256);
     this.nextFunc = this.func.done;
     this.selfevent.emit('nextFunc');
   }
   
   make_tapobject_appid1.prototype.func.done = function(){
-    if(this.callback) this.callback(this.TAP)
+    if(this.callback) this.callback(this.tap)
   }
   // -------- End TAP ID 1 -----------------
   
