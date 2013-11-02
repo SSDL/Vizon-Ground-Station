@@ -21,6 +21,8 @@ module.exports = function(){
     ;
 
   utils.log('Vizon Ground Station starting on ' + os.hostname());
+  utils.log(config.cc.uri);
+  console.log();
 
 
   //   ----------------   Begin Port Setup   ----------------
@@ -36,7 +38,7 @@ module.exports = function(){
       //utils.log('List of available ports:');
       ports.forEach(function(_port) {
         if(_port.comName== app.config.port || (_port.pnpId.indexOf() >= 0 && _port.pnpId.indexOf(app.config.port.vid) >= 0)) {
-          port = new com.SerialPort(_port.comName, { // '/dev/tty-usbserial1'
+          port = new com.SerialPort(_port.comName, {
             baudrate: 9600,
             parser: com.parsers.raw
           }, false)
@@ -84,7 +86,7 @@ module.exports = function(){
   // handle standard socket events
   .on('connect', function() {
     clearInterval(socketRetry);
-    utils.log('Connected to server');
+    utils.log('Connected to Control Center');
     socket.emit('msg','Sup yall');
     event.on('serialRead',handleSerialRead);
     if(db.empty) {
@@ -95,13 +97,13 @@ module.exports = function(){
     }
   })
   .on('disconnect', function() {
-    utils.log('Connection closed');
+    utils.log('Connection to Control Center closed');
     event.removeListener('serialRead',handleSerialRead);
   })
-  .on('connecting', function() { utils.log('Connecting to Control Center'); })
-  .on('connect_failed', function() { utils.log('Connection failed'); })
-  .on('reconnecting', function() { utils.log('Attempting to reconnect...'); })
-  .on('reconnect_failed', function() { utils.log('Reconnect failed'); })
+  .on('connecting', function() { utils.log('Connecting to Control Center...'); })
+  .on('connect_failed', function() { utils.log('Connection to Control Center failed'); })
+  .on('reconnecting', function() { utils.log('Attempting to reconnect to Control Center...'); })
+  .on('reconnect_failed', function() { utils.log('Reconnect to Control Center failed'); })
 
   // handle custom socket events
   .on('msg', function(data){ utils.log('Control Center message: ' + data); })
@@ -111,7 +113,7 @@ module.exports = function(){
       if(verified) {
         switch(nap.header.typeid) {
         case db.enums.naptype.INFO:
-          utils.log('Control Center INFO: ' + nap.payload)
+          utils.log('INFO: ' + nap.payload)
           break;
         case db.enums.naptype.TAP:
           utils.log('NAP not processed: Ground Station does not handle TAPs');

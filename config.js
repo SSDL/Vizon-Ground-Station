@@ -4,7 +4,7 @@ module.exports = function(app){
       gsid: '52749a447a7383724b912ec2',
       securekey: '1234567890abcdef',
       cc: {
-        uri: 'http://localhost:8080/',
+        uri: 'http://ssdl-lambda-new.stanford.edu:8080/',
         options: { // can use standard config file or args later
           'auto connect': false,
           'reconnect': true,
@@ -12,7 +12,7 @@ module.exports = function(app){
         }
       },
       port: {
-        name: 'COM13',
+        name: 'COM13', // '/dev/tty-usbserial1'
         pid: 'PID_F020',
         vid: 'VID_0403'
       }
@@ -29,7 +29,7 @@ module.exports = function(app){
         }
       },
       port: {
-        name: 'COM13',
+        name: 'COM13', // '/dev/tty-usbserial1'
         pid: 'PID_F020',
         vid: 'VID_0403'
       }
