@@ -11,7 +11,8 @@ module.exports = function(){
     // placeholder objects. thse must exist here so that function callbacks can reference them
     , port = app.port = {}
     , socket = app.socket = {}
-    , serialReadBuffer = []
+    , db = app.db = {empty: true} // database items to request from server
+    , serialReadBuffer = app.serialReadBuffer = []
 
   // tools and utilities
     , make_rapobject = require('./make_rapobject.js')(app)
@@ -19,7 +20,7 @@ module.exports = function(){
     , utils = app.utils = require('./utils.js')(app)
     ;
 
-  utils.log('Vizon Groundstation starting on ' + os.hostname());
+  utils.log('Vizon Ground Station starting on ' + os.hostname());
 
 
   //   ----------------   Begin Port Setup   ----------------
@@ -56,9 +57,7 @@ module.exports = function(){
           })
           .on('data', function(buf) {
             utils.log('Serial data',buf);
-            var data = [];
-            for(var i = 0; i < buf.length; i++) data.push(buf[i]);
-            event.emit('serialRead',data);
+            event.emit('serialRead',buf);
           });
           port.open();
         }
@@ -81,13 +80,19 @@ module.exports = function(){
     socket.socket.connect();
   }, 10000);
 
-  socket = io.connect(app.config.ctrl.uri, app.config.ctrl.options)
+  socket = io.connect(app.config.cc.uri, app.config.cc.options)
   // handle standard socket events
   .on('connect', function() {
     clearInterval(socketRetry);
     utils.log('Connected to server');
-    socket.emit('message','Sup yall');
+    socket.emit('msg','Sup yall');
     event.on('serialRead',handleSerialRead);
+    if(db.empty) {
+      socket.once('dbsync',function(dbitems) {
+        db = dbitems;
+      });
+      socket.emit('dbsync');
+    }
   })
   .on('disconnect', function() {
     utils.log('Connection closed');
@@ -99,12 +104,28 @@ module.exports = function(){
   .on('reconnect_failed', function() { utils.log('Reconnect failed'); })
 
   // handle custom socket events
-  .on('message', function(data){ utils.log('Control Center message: ' + data); })
-  .on('NAP:INFO', function(data){
-    utils.log('Control Center INFO: ' + data)
-  })
-  .on('NAP:RAP', function(nap){
-    handleSocketRAP(nap.rap);
+  .on('msg', function(data){ utils.log('Control Center message: ' + data); })
+  .on('NAP', function(nap){
+    authenticateNAP(nap, function(_nap, verified){
+      utils.log('NAP from Control Center' + ( verified ? ' verified' : ' failed verification'));
+      if(verified) {
+        switch(nap.header.typeid) {
+        case db.enums.naptype.INFO:
+          utils.log('Control Center INFO: ' + nap.payload)
+          break;
+        case db.enums.naptype.TAP:
+          utils.log('NAP not processed: Ground Station does not handle TAPs');
+          break;
+        case db.enums.naptype.CAP:
+          handleSocketRAP(nap.payload);
+          break;
+        case db.enums.naptype.CMD:
+          break;
+        default:
+          utils.log('NAP not processed: unknown typeid');
+        }
+      }
+    });
   });
 
   socket.socket.connect(); // trust me, this is correct
@@ -114,25 +135,23 @@ module.exports = function(){
 
   utils.randomSerialData(); // Generate random serial data for testing
   
-  
 
-  function handleSerialRead(data) { // Assumes data is buffer array of bytes.
-    serialReadBuffer.extend(data); // Push all elements in data onto serialReadBuffer in place
-    for(var i = 1; i < serialReadBuffer.length-1; i++) { // Do not search at start of array. 
-      if(serialReadBuffer[i] == 0xAB && serialReadBuffer[i+1] == 0xCD) { // found sync
-        make_rapobject.process(serialReadBuffer.splice(0,i),function(rap) {
+  function handleSerialRead(newdata) { // newdata can be either Buffer or Array. The extendArray function can handle either.
+    extendArray(serialReadBuffer,newdata); // Push all buffer elements onto serialReadBuffer in place.
+    for(var i = 1; i < serialReadBuffer.length-1; i++) { // Search for /next/ sync, marking end of rap
+      if(serialReadBuffer[i] == 0xAB && serialReadBuffer[i+1] == 0xCD) { // found end of rap
+        make_rapobject.process(serialReadBuffer.splice(0,i),function(rap) { // splice out the complete rap
           var nap = {
-            gsid: app.config.gsid,
-            mid: 314, //rap.tap.mid,
-            payload: {
-              tap: rap.tap
-            }
+            header: {
+              typeid: db.enums.naptype.TAP,
+              gsid: app.config.gsid,
+              mid: rap.to
+            },
+            payload: rap.tap
           }
-          if(app.config.securekey) signNAP(nap);
-          socket.emit('NAP:TAP',nap);
-          utils.log('NAP:TAP transmitted to server', nap);
+          sendNAP(nap);
         });
-        return;
+        return; // stop searching for sync
       }
     }
   }
@@ -147,7 +166,7 @@ module.exports = function(){
   }
 
 
-
+  // this is completely wrong now
   function handleSocketRAP(RAP) { // This receives a JSON object
     utils.log('RAP from server: ',RAP);
     if(port.connected) {
@@ -160,23 +179,32 @@ module.exports = function(){
     }
   }
   
-  
-  function signNAP(NAP) {
-    NAP.signature = {
-      alg: 'sha1',
-      enc: 'base64'
-    };
-    NAP.signature.hmac = crypto.createHmac(NAP.signature.alg, app.config.securekey)
-      .update(JSON.stringify(NAP.payload))
-      .digest(NAP.signature.enc);
+  function sendNAP(nap, callback) {
+    signNAP(nap, function(_nap){
+      socket.emit('NAP',nap);
+      utils.log('NAP transmitted to Control Station', nap);
+      if(callback) callback(nap);
+    });
   }
   
   
-  function verifyNAP(NAP) {
-    var hmac = crypto.createHmac(NAP.signature.alg, app.config.securekey)
-      .update(JSON.stringify(NAP.payload))
-      .digest(NAP.signature.enc);
-    return (NAP.signature.hmac == hmac)
+  function signNAP(nap, callback) {
+    nap.signature = {
+      alg: 'sha1',
+      enc: 'base64'
+    };
+    nap.signature.hmac = crypto.createHmac(nap.signature.alg, app.config.securekey)
+      .update(JSON.stringify(nap.header) + JSON.stringify(nap.payload))
+      .digest(nap.signature.enc);
+    if(callback) callback(nap);
+  }
+  
+  
+  function authenticateNAP(nap, callback) {
+    var hmac = crypto.createHmac(nap.signature.alg, app.config.securekey)
+      .update(JSON.stringify(nap.header) + JSON.stringify(nap.payload))
+      .digest(nap.signature.enc);
+    if(callback) callback(nap, nap.signature.hmac == hmac);
   }
 
 }();

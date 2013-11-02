@@ -28,7 +28,7 @@ module.exports = function(app) {
   make_tapobject_appid1.prototype.func = {}
   
   make_tapobject_appid1.prototype.func.test = function(){
-    this.tap.typeid = this.tapbytes[0];
+    this.tap.typeid = 'TAP_'+this.tapbytes[0];
     this.tap.demo = Math.floor(Math.random()*256);
     this.nextFunc = this.func.done;
     this.selfevent.emit('nextFunc');

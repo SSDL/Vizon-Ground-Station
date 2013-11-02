@@ -89,7 +89,7 @@ module.exports = function(app) {
     // it might be good to copy just the bytes that are for the tap and pass those in
     // first, it is necessary to look at the next rap byte to determine the tap appid
     // and select the correct tap maker module
-    var tapbytes = this.rapbytes.slice(10,this.rapbytes.length-3);
+    var tapbytes = this.rapbytes.slice(9,this.rapbytes.length-3);
     var appid = tapbytes[0];
     var _this = this;
     var callback = function(tap) {

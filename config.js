@@ -1,9 +1,9 @@
 module.exports = function(app){
   var config = {
     production: {
-      gsid: 234521,
+      gsid: '52749a447a7383724b912ec2',
       securekey: '1234567890abcdef',
-      ctrl: {
+      cc: {
         uri: 'http://localhost:8080/',
         options: { // can use standard config file or args later
           'auto connect': false,
@@ -18,9 +18,9 @@ module.exports = function(app){
       }
     },
     development: {
-      gsid: 234521,
+      gsid: '52749a447a7383724b912ec2',
       securekey: '1234567890abcdef',
-      ctrl: {
+      cc: {
         uri: 'http://localhost:8080/',
         options: { // can use standard config file or args later
           'auto connect': false,
