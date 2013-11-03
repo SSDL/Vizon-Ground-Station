@@ -94,7 +94,7 @@ module.exports = function(app) {
     var _this = this;
     var callback = function(tap) {
       _this.rap.tap = tap; // add the RAP to the RAP
-      _this.rap.tap.raw = _this.rapbytes.toString();
+      _this.rap.tap.cartons = [{raw: _this.rapbytes.toString()}];
       _this.selfevent.emit('nextFunc'); // have the RAP event emitter trigger the next function
     }
     this.nextFunc = this.func.checksum;

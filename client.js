@@ -107,22 +107,22 @@ module.exports = function(){
   .on('msg', function(data){ utils.log('Control Center message: ' + data); })
   .on('NAP', function(nap){
     authenticateNAP(nap, function(_nap, verified){
-      utils.log('NAP from Control Center' + ( verified ? ' verified' : ' failed verification'), nap);
+      logNAP(nap, 'from Control Center' + ( verified ? ' verified' : ' failed verification'));
       if(verified) {
-        switch(nap.header.typeid) {
-        case db.enums.naptype.INFO:
-          utils.log('INFO: ' + nap.payload)
+        switch(nap.payload.typeid.split('_')[0]) {
+        case 'INFO':
+          logNAP(nap, nap.payload.text)
           break;
-        case db.enums.naptype.TAP:
-          utils.log('NAP not processed: Ground Station does not handle TAPs');
+        case 'TAP':
+          logNAP(nap, 'ignored: TAP');
           break;
-        case db.enums.naptype.CAP:
+        case 'CAP':
           handleSocketRAP(nap.payload);
           break;
-        case db.enums.naptype.CMD:
+        case 'CMD':
           break;
         default:
-          utils.log('NAP not processed: unknown typeid');
+          logNAP(nap, 'ignored: unknown');
         }
       }
     });
@@ -143,17 +143,21 @@ module.exports = function(){
         make_rapobject.process(serialReadBuffer.splice(0,i),function(rap) { // splice out the complete rap
           var nap = {
             header: {
-              typeid: db.enums.naptype.TAP,
               gsid: app.config.gsid,
               mid: rap.to
             },
-            payload: [rap.tap]
+            payload: rap.tap
           }
           sendNAP(nap);
         });
         return; // stop searching for sync
       }
     }
+  }
+  
+  
+  function logNAP(nap, text) {
+    utils.log(nap.payload.typeid.split('_')[0] + ' ' + nap.signature.hmac.substring(0,6) + ': ' + text, nap);
   }
   
   
@@ -182,7 +186,7 @@ module.exports = function(){
   function sendNAP(nap, callback) {
     signNAP(nap, function(_nap){
       socket.emit('NAP',nap);
-      utils.log('NAP transmitted to Control Station', nap);
+      logNAP(nap, 'transmitted to Control Station');
       if(callback) callback(nap);
     });
   }
