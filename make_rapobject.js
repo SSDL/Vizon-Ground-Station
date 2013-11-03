@@ -94,10 +94,11 @@ module.exports = function(app) {
     var _this = this;
     var callback = function(tap) {
       _this.rap.tap = tap; // add the RAP to the RAP
+      _this.rap.tap.raw = _this.rapbytes.toString();
       _this.selfevent.emit('nextFunc'); // have the RAP event emitter trigger the next function
     }
     this.nextFunc = this.func.checksum;
-    make_tapobject['appid'+1].process(tapbytes,callback); // implementation needs to change
+    make_tapobject[0].process(tapbytes,callback); // implementation needs to change
   }
   
   // RAP field 8, bytes N-1,N, idx[len-2,len-1]

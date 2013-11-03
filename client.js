@@ -89,12 +89,9 @@ module.exports = function(){
     utils.log('Connected to Control Center');
     socket.emit('msg','Sup yall');
     event.on('serialRead',handleSerialRead);
-    if(db.empty) {
-      socket.once('dbsync',function(dbitems) {
-        db = dbitems;
-      });
-      socket.emit('dbsync');
-    }
+    if(db.empty) socket.emit('dbsync',function(dbitems) {
+      db = dbitems;
+    })
   })
   .on('disconnect', function() {
     utils.log('Connection to Control Center closed');
@@ -103,13 +100,14 @@ module.exports = function(){
   .on('connecting', function() { utils.log('Connecting to Control Center...'); })
   .on('connect_failed', function() { utils.log('Connection to Control Center failed'); })
   .on('reconnecting', function() { utils.log('Attempting to reconnect to Control Center...'); })
+  //.on('reconnect', function() { utils.log('Reconnected to Control Center'); })
   .on('reconnect_failed', function() { utils.log('Reconnect to Control Center failed'); })
 
   // handle custom socket events
   .on('msg', function(data){ utils.log('Control Center message: ' + data); })
   .on('NAP', function(nap){
     authenticateNAP(nap, function(_nap, verified){
-      utils.log('NAP from Control Center' + ( verified ? ' verified' : ' failed verification'));
+      utils.log('NAP from Control Center' + ( verified ? ' verified' : ' failed verification'), nap);
       if(verified) {
         switch(nap.header.typeid) {
         case db.enums.naptype.INFO:
@@ -149,7 +147,7 @@ module.exports = function(){
               gsid: app.config.gsid,
               mid: rap.to
             },
-            payload: rap.tap
+            payload: [rap.tap]
           }
           sendNAP(nap);
         });
