@@ -186,7 +186,7 @@ module.exports = function(){
   function sendNAP(nap, callback) {
     signNAP(nap, function(_nap){
       socket.emit('NAP',nap);
-      logNAP(nap, 'transmitted to Control Station');
+      logNAP(nap, 'transmitted to Control Center');
       if(callback) callback(nap);
     });
   }
