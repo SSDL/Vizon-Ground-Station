@@ -1,5 +1,7 @@
 module.exports = function(app){
+  var fs = require('fs');
   var config = {
+  
     production: {
       gsid: '52749a447a7383724b912ec2',
       securekey: '1234567890abcdef',
@@ -7,33 +9,43 @@ module.exports = function(app){
         uri: 'http://ssdl-lambda-new.stanford.edu:8080/',
         options: { // can use standard config file or args later
           'auto connect': false,
-          'reconnect': true,
-          'reconnection limit': 10000
+          secure: true
         }
       },
       port: {
         name: 'COM13', // '/dev/tty-usbserial1'
         pid: 'PID_F020',
         vid: 'VID_0403'
+      },
+      ssl: {
+        cert: fs.readFileSync('./ssl/client.crt'),
+        key: fs.readFileSync('./ssl/client.pem'),
+        ca: fs.readFileSync('./ssl/ca.crt')
       }
     },
+    
     development: {
       gsid: '52749a447a7383724b912ec2',
       securekey: '1234567890abcdef',
       cc: {
-        uri: 'http://localhost:8080/',
+        uri: 'localhost/gs',
         options: { // can use standard config file or args later
           'auto connect': false,
-          'reconnect': true,
-          'reconnection limit': 10000
+          secure: true
         }
       },
       port: {
         name: 'COM13', // '/dev/tty-usbserial1'
         pid: 'PID_F020',
         vid: 'VID_0403'
+      },
+      ssl: {
+        cert: fs.readFileSync('./ssl/client.crt'),
+        key: fs.readFileSync('./ssl/client.pem'),
+        ca: fs.readFileSync('./ssl/ca.crt')
       }
     }
+    
   };
   
   config = config[app.get('env')];

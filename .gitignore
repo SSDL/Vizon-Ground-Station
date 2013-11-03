@@ -1,3 +1,10 @@
+# Vizon
+*.crt
+*.cert
+*.key
+*.pem
+
+
 # Node.js with Express and Stlyus
 public/
 cache/
