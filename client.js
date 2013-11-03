@@ -107,10 +107,10 @@ module.exports = function(){
   .on('msg', function(data){ utils.log('Control Center message: ' + data); })
   .on('NAP', function(nap){
     authenticateNAP(nap, function(_nap, verified){
-      logNAP(nap, 'from Control Center' + ( verified ? ' verified' : ' failed verification'));
+      logNAP(nap, (verified ? 'verified' : 'rejected') + ' from Control Center');
       if(verified) {
         switch(nap.payload.typeid.split('_')[0]) {
-        case 'INFO':
+        case 'INF':
           logNAP(nap, nap.payload.text)
           break;
         case 'TAP':
