@@ -8,9 +8,24 @@ extendArray = function (arrcurr, datanew) {
 module.exports = function(app) {
   
   var utils =  {};
+  
+  utils.colors = {
+    low: '\033[2m',
+    error : '\033[31m',
+    info: '\033[36m',
+    ok: '\033[32m',
+    warn: '\033[33m',
+    reset: '\033[0m'
+  }
+    
+  utils.napcolors = {
+    INF: utils.colors.info,
+    TAP: utils.colors.warn
+  }
+  
   utils.log = function(str,data) {
     if(app.config.dev && data) console.log();
-    console.log((new Date()).toISOString() + ' - ' + str);
+    console.log(utils.colors.low + (new Date()).toISOString() + ' - ' + utils.colors.rset + str);
     if(app.config.dev && data) {
       console.log(data);
       console.log();

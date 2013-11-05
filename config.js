@@ -6,7 +6,7 @@ module.exports = function(app){
       gsid: '52749a447a7383724b912ec2',
       securekey: '1234567890abcdef',
       cc: {
-        uri: 'ssdl-lambda-new.stanford.edu/gs',
+        uri: 'ssdl-lambda.stanford.edu/gs',
         options: { // can use standard config file or args later
           'auto connect': false,
           secure: false

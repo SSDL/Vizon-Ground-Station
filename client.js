@@ -107,7 +107,7 @@ module.exports = function(){
   .on('msg', function(data){ utils.log('Control Center message: ' + data); })
   .on('NAP', function(nap){
     authenticateNAP(nap, function(_nap, verified){
-      logNAP(nap, (verified ? 'verified' : 'rejected') + ' from Control Center');
+      logNAP(nap, (verified ? utils.colors.ok + 'verified' : utils.colors.warn + 'rejected') + utils.colors.reset + ' from Control Center');
       if(verified) {
         switch(nap.payload.typeid.split('_')[0]) {
         case 'INF':
@@ -157,7 +157,8 @@ module.exports = function(){
   
   
   function logNAP(nap, text) {
-    utils.log(nap.payload.typeid.split('_')[0] + ' ' + nap.signature.hmac.substring(0,6) + ': ' + text, nap);
+    var typeid = nap.payload.typeid.split('_')[0];
+    utils.log((utils.napcolors[typeid] ? utils.napcolors[typeid] : '') + typeid + utils.colors.reset + ' ' + nap.signature.hmac.substring(0,6) + ' ' + text, nap);
   }
   
   
