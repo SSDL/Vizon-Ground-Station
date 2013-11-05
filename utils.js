@@ -2,7 +2,8 @@
 
 // Extend the given array with the provided newdata, which can be either Buffer or Array
 extendArray = function (arrcurr, datanew) {
-    datanew.forEach(function(elem) { arrcurr.push(elem) });    
+  for(var i = 0; i < datanew.length; i++) { arrcurr.push(datanew[i]); }
+    //datanew.forEach(function(elem) { arrcurr.push(elem) });    
 }
 
 module.exports = function(app) {

@@ -38,7 +38,7 @@ module.exports = function(){
     com.list(function (err, ports) {
       //utils.log('List of available ports:');
       ports.forEach(function(_port) {
-        if(_port.comName== app.config.port || (_port.pnpId.indexOf() >= 0 && _port.pnpId.indexOf(app.config.port.vid) >= 0)) {
+        if(_port.comName == app.config.port || (_port.pnpId.indexOf(app.config.port.pid) >= 0 && _port.pnpId.indexOf(app.config.port.vid) >= 0)) {
           port = new com.SerialPort(_port.comName, {
             baudrate: 9600,
             parser: com.parsers.raw
@@ -46,7 +46,7 @@ module.exports = function(){
           .on('open', function() {
             clearInterval(portRetry);
             port.connected = true;
-            utils.log('Serial port ' + port.comName + ' opened');
+            utils.log('Serial port ' + _port.comName + ' opened');
             event.on('serialWrite',handleSerialWrite);
           })
           .on('close', function(data) {
@@ -57,6 +57,7 @@ module.exports = function(){
             port.connected = false;
             portRetry = setInterval(portRetryFunc, 10000);
             event.removeListener('serialWrite',handleSerialWrite);
+            utils.log('Serial port ' + _port.comName + ' closed');
           })
           .on('data', function(buf) {
             utils.log('Serial data',buf);
@@ -67,8 +68,8 @@ module.exports = function(){
         //console.log('Port name: ' + _port.comName);
         //console.log('Port pnpid: ' + _port.pnpId);
         //console.log('Port mfgr: ' + _port.manufacturer);
+        //console.log();
       });
-      //console.log(' '); // provide newline after list
     });
   }
 
@@ -108,7 +109,7 @@ module.exports = function(){
   .on('msg', function(data){ utils.log('Control Center message: ' + data); })
   .on('NAP', function(nap){
     authenticateNAP(nap, function(_nap, verified){
-      logNAP(nap, (verified ? utils.colors.ok + 'verified' : utils.colors.warn + 'rejected') + utils.colors.reset + ' from Control Center');
+      logNAP(nap, (verified ? utils.colors.ok + 'accepted' : utils.colors.warn + 'rejected') + utils.colors.reset + ' from Control Center');
       if(verified) {
         switch(nap.payload.typeid.split('_')[0]) {
         case 'INF':

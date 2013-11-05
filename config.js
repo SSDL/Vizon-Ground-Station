@@ -51,5 +51,6 @@ module.exports = function(app){
   config = config[app.get('env')];
   config.prod = (app.get('env') == 'production');
   config.dev = !(config.prod);
+  config.env = (config.prod ? 'production' : 'development');
   return config;
 }
