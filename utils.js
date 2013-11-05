@@ -25,7 +25,7 @@ module.exports = function(app) {
   
   utils.log = function(str,data) {
     if(app.config.dev && data) console.log();
-    console.log(utils.colors.low + (new Date()).toISOString() + ' - ' + utils.colors.rset + str);
+    console.log(utils.colors.low + (new Date()).toISOString() + ' - ' + utils.colors.reset + str);
     if(app.config.dev && data) {
       console.log(data);
       console.log();

@@ -19,9 +19,10 @@ module.exports = function(){
     , make_rapbytes = require('./make_rapbytes.js')(app)
     , utils = app.utils = require('./utils.js')(app)
     ;
-
-  utils.log('Vizon Ground Station starting on ' + os.hostname());
-  utils.log(config.cc.uri);
+    
+    
+  app.utils.log('Vizon Ground Station starting on ' + os.hostname());
+  app.utils.log('Starting in ' + app.utils.colors.info + app.config.env + app.utils.colors.reset+ ' environment')
   console.log();
 
 
@@ -133,7 +134,7 @@ module.exports = function(){
 
 
 
-  utils.randomSerialData(); // Generate random serial data for testing
+  //utils.randomSerialData(); // Generate random serial data for testing
   
 
   function handleSerialRead(newdata) { // newdata can be either Buffer or Array. The extendArray function can handle either.
