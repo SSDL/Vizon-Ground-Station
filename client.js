@@ -93,6 +93,16 @@ module.exports = function(){
     event.on('serialRead',handleSerialRead);
     if(db.empty) socket.emit('dbsync',function(dbitems) {
       db = dbitems;
+      for(var i in db.descriptors) { // for each of the descriptors
+        db.descriptors[i].size=0; // this stuff will probably go away because variable byte lengths make this useless
+        for(var j in db.descriptors[i].h) {
+          if(db.descriptors[i].h[j].l) db.descriptors[i].size += db.descriptors[i].h[j].l;
+        }
+        for(var j in db.descriptors[i].e) {
+          if(db.descriptors[i].e[j].l) db.descriptors[i].size += db.descriptors[i].e[j].l;
+        }
+      }
+      app.db = db;
     })
   })
   .on('disconnect', function() {
@@ -213,5 +223,33 @@ module.exports = function(){
       .digest(nap.signature.enc);
     if(callback) callback(nap, nap.signature.hmac == hmac);
   }
+  
+  app.use(express.logger('dev'));
+  app.use(express.bodyParser());
+  
+  app.get('/', function (req, res) {
+    res.send('ready');
+  });
+  
+  app.get('/raw/:data',function(req,res) {
+    make_rapobject.process(req.params.data.split(','), function(rap) { // splice out the complete rap
+      var nap = {
+        header: {
+          gsid: app.config.gsid,
+          mid: rap.from
+        },
+        payload: rap.tap
+      }
+      res.send(nap);
+    });
+  });
+  
+  app.get('/tap/:data',function(req,res) {
+    res.send(db.descriptors);
+  });
+  
+  app.http = app.listen(8080, function() {
+    console.log('Listening on ' + app.utils.colors.warn + 'http:' + app.http.address().port + app.utils.colors.reset);
+  });
 
 }();
