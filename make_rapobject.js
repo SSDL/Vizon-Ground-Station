@@ -8,6 +8,7 @@ module.exports = function(app) {
     this.callback = callback;
     
     this.rap = {};
+    this.tap = { h: {}, p: {} }
     
     
   // RAP field 1, bytes 1,2, idx[0,1]
@@ -38,13 +39,12 @@ module.exports = function(app) {
       return;
     }
     
-    this.tap = { h: {}, p: {} }
     var tap_desc = app.db.descriptors['TAP_' + tapbytes[0]];
     if(!tap_desc) {
       app.utils.log('RAP dropped - unknown TAP');
       return
     }
-    var count = 2; // we don't need tapid or length
+    var count = 0; // we don't need tapid or length
     for(var i in tap_desc.h) {
       if(tap_desc.h[i].f) { // for each item in the tap header
         var bytesOfNumber = tapbytes.slice(count, count += tap_desc.h[i].l);
@@ -75,6 +75,7 @@ module.exports = function(app) {
         this.tap.p[tap_desc.p[i].f] = result;
       }
     }
+    this.tap.h.t = 'TAP_' + this.tap.h.t;
     this.rap.tap = this.tap;
     console.log(this.rap);
     if(this.callback) this.callback(this.rap);

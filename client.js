@@ -121,7 +121,7 @@ module.exports = function(){
     authenticateNAP(nap, function(_nap, verified){
       logNAP(nap, (verified ? utils.colors.ok + 'accepted' : utils.colors.warn + 'rejected') + utils.colors.reset + ' from Control Center');
       if(verified) {
-        switch(nap.payload.typeid.split('_')[0]) {
+        switch(nap.payload.h.t.split('_')[0]) {
         case 'INF':
           logNAP(nap, nap.payload.text)
           break;
@@ -248,7 +248,7 @@ module.exports = function(){
     res.send(db.descriptors);
   });
   
-  app.http = app.listen(8080, function() {
+  app.http = app.listen(8081, function() {
     console.log('Listening on ' + app.utils.colors.warn + 'http:' + app.http.address().port + app.utils.colors.reset);
   });
 
