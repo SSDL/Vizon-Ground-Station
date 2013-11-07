@@ -33,24 +33,6 @@ module.exports = function(app) {
     }
   }
   
-  utils.randomSerialData = function(){
-    setInterval(function() {
-      var data = [];
-      for(var i = 0; i < 10; i++) data.push(Math.floor(Math.random()*256));
-      utils.log('Serial data',data);
-      app.event.emit('serialRead',data);
-    }, 1000);
-    setInterval(function() {
-      var data = [0xAB,0xCD];
-      for(var i = 0; i < 8; i++) data.push(Math.floor(Math.random()*256));
-      data[3] = 0x01;
-      data[4] = 0x3A;
-      data[9] = 0;
-      utils.log('Serial data',data);
-      app.event.emit('serialRead',data);
-    }, 3000);
-  }
-  
   utils.augmentChecksums = function() {
     if(arguments.length < 2) return;
     var obj = arguments[0];

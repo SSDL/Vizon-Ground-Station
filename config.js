@@ -4,7 +4,7 @@ module.exports = function(app){
   
     production: {
       gsid: '52749a447a7383724b912ec2',
-      securekey: '1234567890abcdef',
+      key: '1234567890abcdef',
       cc: {
         uri: 'ssdl-lambda.stanford.edu/gs',
         options: { // can use standard config file or args later
@@ -26,7 +26,7 @@ module.exports = function(app){
     
     development: {
       gsid: '52749a447a7383724b912ec2',
-      securekey: '1234567890abcdef',
+      key: '1234567890abcdef',
       cc: {
         uri: 'localhost/gs',
         options: { // can use standard config file or args later
