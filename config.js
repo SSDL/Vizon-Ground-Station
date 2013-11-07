@@ -6,10 +6,10 @@ module.exports = function(app){
       gsid: '52749a447a7383724b912ec2',
       key: '1234567890abcdef',
       cc: {
-        uri: 'ssdl-lambda.stanford.edu/gs',
-        options: { // can use standard config file or args later
+        uri: 'https://ssdl-vizon.stanford.edu/gs', // must specify https or a socket hangup will occur
+        options: {
           'auto connect': false,
-          secure: false
+          secure: true
         }
       },
       port: {
@@ -18,9 +18,9 @@ module.exports = function(app){
         vid: 'VID_0403'
       },
       ssl: {
-        cert: fs.readFileSync('./ssl/client.crt'),
-        key: fs.readFileSync('./ssl/client.pem'),
-        ca: fs.readFileSync('./ssl/ca.crt')
+        //cert: fs.readFileSync('./ssl/client.crt'),
+        //key: fs.readFileSync('./ssl/client.pem'),
+        //ca: fs.readFileSync('./ssl/ca.crt')
       }
     },
     
@@ -40,9 +40,9 @@ module.exports = function(app){
         vid: 'VID_0403'
       },
       ssl: {
-        cert: fs.readFileSync('./ssl/client.crt'),
-        key: fs.readFileSync('./ssl/client.pem'),
-        ca: fs.readFileSync('./ssl/ca.crt')
+        //cert: fs.readFileSync('./ssl/client.crt'),
+        //key: fs.readFileSync('./ssl/client.pem'),
+        //ca: fs.readFileSync('./ssl/ca.crt')
       }
     }
     
