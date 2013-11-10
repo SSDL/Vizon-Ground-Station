@@ -33,6 +33,10 @@ module.exports = function(app) {
 
   // handle custom socket events
   .on('msg', function(data){ app.utils.log(app.utils.colors.warn + 'MSG' + app.utils.colors.reset + ' from Control Center: ' + data); })
+  .on('relay', function(data) {
+	app.gs.handleSerialRead(data);
+	app.utils.log(app.utils.colors.warn + 'RLY' + app.utils.colors.reset + ' from Control Center');
+  })
   .on('NAP', function(nap){
     app.gs.authenticateNAP(nap, function(_nap, verified){
       app.gs.logNAP(nap, (verified ? app.utils.colors.ok + 'accepted' : app.utils.colors.warn + 'rejected') + app.utils.colors.reset + ' from Control Center');
