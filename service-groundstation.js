@@ -17,7 +17,7 @@ module.exports = function(app) {
     }
   // RAP field 8, bytes N-1,N, idx[len-2,len-1]. Do this early so we don't waste time processing a bad RAP
     app.utils.augmentChecksums(rap,rapbytes.slice(0,rapbytes.length-2)); 
-    if(false && (rap.checksumA != rap.rapbytes[rapbytes.length-2] || rap.checksumB != rap.rapbytes[rapbytes.length-1])) {
+    if((rap.checksumA != rapbytes[rapbytes.length-2]) || (rap.checksumB != rapbytes[rapbytes.length-1])) {
       app.utils.log('RAP dropped - checksum wrong');
       return;
     }
@@ -79,7 +79,6 @@ module.exports = function(app) {
     }
     tap.h.t = 'TAP_' + tap.h.t;
     rap.tap = tap;
-    console.log(rap);
     if(callback) callback(rap);
   }
   
@@ -87,14 +86,14 @@ module.exports = function(app) {
   
 
   gs.handleSerialRead = function handleSerialRead(newdata) { // newdata can be either Buffer or Array. The extendArray function can handle either.
-    extendArray(serialReadBuffer,newdata); // Push all buffer elements onto serialReadBuffer in place.
-    for(var i = 1; i < serialReadBuffer.length-1; i++) { // Search for /next/ sync, marking end of rap
-      if(serialReadBuffer[i] == 0xAB && serialReadBuffer[i+1] == 0xCD) { // found end of rap
-        gs.rapToNAP(serialReadBuffer.splice(0,i), function(rap) { // splice out the complete rap
-          var nap = createNAP();
+    extendArray(app.serialReadBuffer,newdata); // Push all buffer elements onto app.serialReadBuffer in place.
+    for(var i = 1; i < app.serialReadBuffer.length-1; i++) { // Search for /next/ sync, marking end of rap
+      if(app.serialReadBuffer[i] == 0xAB && app.serialReadBuffer[i+1] == 0xCD) { // found end of rap
+        gs.rapToNAP(app.serialReadBuffer.splice(0,i), function(rap) { // splice out the complete rap
+          var nap = gs.createNAP();
           nap.h.mid = rap.to;
           nap.p = rap.tap;
-          sendNAP(nap);
+          gs.sendNAP(nap);
         });
         return; // stop searching for sync
       }
@@ -129,7 +128,7 @@ module.exports = function(app) {
     case 'ping':
       break;
     default:
-      app.gs.logNAP(nap, 'ignored: unknown');
+      gs.logNAP(nap, 'ignored: unknown');
     }
     
   }
