@@ -21,7 +21,8 @@ module.exports = function(app) {
     
   utils.napcolors = {
     INF: utils.colors.info,
-    TAP: utils.colors.warn
+    TAP: utils.colors.warn,
+    ERR: utils.colors.error
   }
   
   utils.log = function(str,data) {

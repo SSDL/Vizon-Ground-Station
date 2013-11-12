@@ -1,8 +1,8 @@
 module.exports = function(app) {
   var event = app.event
     , crypto = require('crypto')
+    , utils = app.utils
     , gs = {}
-    , utils = utils
     ;
 
   gs.rapToNAP = function rapToNAP(rapbytes, callback) {
@@ -80,14 +80,14 @@ module.exports = function(app) {
 
   gs.handleSerialRead = function handleSerialRead(newdata) { // newdata can be either Buffer or Array. The extendArray function can handle either.
     extendArray(app.serialReadBuffer,newdata); // Push all buffer elements onto app.serialReadBuffer in place.
+    newdata = null;
     for(var i = 1; i < app.serialReadBuffer.length-1; i++) { // Search for /next/ sync, marking end of rap
       if(app.serialReadBuffer[i] == 0xAB && app.serialReadBuffer[i+1] == 0xCD) { // found end of rap
         gs.rapToNAP(app.serialReadBuffer.splice(0,i), function(rap) { // splice out the complete rap
-          var tap = {};
+          var tap = rap.tap;
           tap.h.mid = rap.to;
-          tap.p = rap.tap;
-          socket.emit('tap',tap);
-          gs.logPacket(nap, 'TAP', 'transmitted to Control Center');
+          event.emit('socketSend','tap',tap);
+          gs.logPacket(tap, 'TAP', 'to CC');
         });
         return; // stop searching for sync
       }
@@ -112,8 +112,8 @@ module.exports = function(app) {
   
   
   gs.logPacket = function logPacket(packet, TYPE, text, hash) {
-    if(!hash) hash = crypto.createHash('sha1').update(packet).digest('hex');
-    utils.log((utils.napcolors[typeid] ? utils.napcolors[TYPE] : '') + TYPE + utils.colors.reset + ' ' + packet.hash.substring(0,6) + ' ' + text, packet);
+    if(!hash) hash = crypto.createHash('sha1').update(JSON.stringify(packet)).digest('hex');
+    utils.log((utils.napcolors[TYPE] ? utils.napcolors[TYPE] : '') + TYPE + utils.colors.reset + ' ' + hash.substring(0,6) + ' ' + text, packet);
   }
   
   

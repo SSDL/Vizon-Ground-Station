@@ -1,7 +1,6 @@
 module.exports = function(){
   var os = require("os")
-    , express = require('express')
-    , app = express()
+    , app = {}
     , event = app.event = new (require('events').EventEmitter)
     , config = app.config = require('./config.js')(app)
     ;
@@ -20,13 +19,5 @@ module.exports = function(){
   app.utils.log('Vizon Ground Station starting on ' + os.hostname());
   app.utils.log('Starting in ' + app.utils.colors.info + app.config.env + app.utils.colors.reset+ ' environment')
   console.log();
-
-  if(app.config.dev || false) app.use(express.logger('dev'));
-  app.use(express.bodyParser());
-  require('./service-routes.js')(app);
-  
-  app.http = app.listen(8081, function() {
-    app.utils.log(app.utils.colors.info + 'INF' + app.utils.colors.reset + ' Listening on ' + app.utils.colors.warn + 'http:' + app.http.address().port + app.utils.colors.reset);
-  });
 
 }();

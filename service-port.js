@@ -1,6 +1,8 @@
 module.exports = function(app) {
   var event = app.event
     , com = require("serialport")
+    , utils = app.utils
+    , gs = app.gs
     , port = {}
     ;
 

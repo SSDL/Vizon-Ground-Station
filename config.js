@@ -48,8 +48,8 @@ module.exports = function(app){
     
   };
   
-  config = config[app.get('env')];
-  config.prod = (app.get('env') == 'production');
+  config = config[process.env.NODE_ENV];
+  config.prod = (process.env.NODE_ENV == 'production');
   config.dev = !(config.prod);
   config.env = (config.prod ? 'production' : 'development');
   return config;
