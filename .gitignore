@@ -1,8 +1,12 @@
+#SVN
+.svn*
+
 # Vizon
 *.crt
-*.cert
+*.cer*
 *.key
 *.pem
+*.p12
 
 
 # Node.js with Express and Stlyus

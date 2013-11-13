@@ -1,4 +1,4 @@
-module.exports = function(app){
+module.exports = function(){
   var fs = require('fs');
   var config = {
   
@@ -8,14 +8,14 @@ module.exports = function(app){
       cc: {
         uri: 'https://ssdl-vizon.stanford.edu/gs', // must specify https or a socket hangup will occur
         options: {
-          'auto connect': false,
-          secure: true
+          'auto connect': false
         }
       },
       port: {
         name: 'COM13', // '/dev/tty-usbserial1'
         pid: 'PID_F020',
-        vid: 'VID_0403'
+        vid: 'VID_0403',
+        baud: 9600
       },
       ssl: {
         //cert: fs.readFileSync('./ssl/client.crt'),
@@ -28,16 +28,16 @@ module.exports = function(app){
       gsid: '52749a447a7383724b912ec2',
       key: '1234567890abcdef',
       cc: {
-        uri: 'localhost/gs',
+        uri: 'http://localhost/gs',
         options: { // can use standard config file or args later
-          'auto connect': false,
-          secure: false
+          'auto connect': false
         }
       },
       port: {
         name: 'COM13', // '/dev/tty-usbserial1'
         pid: 'PID_F020',
-        vid: 'VID_0403'
+        vid: 'VID_0403',
+        baud: 9600
       },
       ssl: {
         //cert: fs.readFileSync('./ssl/client.crt'),
@@ -48,9 +48,10 @@ module.exports = function(app){
     
   };
   
-  config = config[process.env.NODE_ENV];
-  config.prod = (process.env.NODE_ENV == 'production');
+  var env = (process.env.NODE_ENV == 'production' ? 'production' : 'development');
+  config = config[env]; // select the config property that matches the environment
+  config.prod = (env == 'production'); // set boolean flags for convenience
   config.dev = !(config.prod);
-  config.env = (config.prod ? 'production' : 'development');
+  config.env = env;
   return config;
-}
+}();
