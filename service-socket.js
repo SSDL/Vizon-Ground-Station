@@ -43,9 +43,14 @@ module.exports = function(app) {
   .on('auth-pass', function() {
     event.emit('socket-start', socket);
     utils.logText('from CC', 'AUTH PASS', utils.colors.ok);
+    socket.emit('traffic');
   })
   .on('auth-fail', function() {
     utils.logText('from CC', 'AUTH FAIL', utils.colors.error);
+  })
+    
+  .on('traffic', function(data){
+    socket.emit('traffic','ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789');
   })
   
   // handle application socket events
