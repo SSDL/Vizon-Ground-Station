@@ -5,7 +5,7 @@ var config = {
     gsid: '52749a447a7383724b912ec2',
     key: '1234567890abcdef',
     cc: {
-      uri: 'http://ssdl-vizon.stanford.edu/gs',
+      uri: 'https://ssdl-vizon.stanford.edu/gs',
       options: {
         'auto connect': false
       }

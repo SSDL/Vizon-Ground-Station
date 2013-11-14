@@ -1,4 +1,6 @@
-var utils = exports;
+var utils = exports
+  , crypto = require('crypto')
+  ;
 
 utils.colors = {
   low: '\033[2m',

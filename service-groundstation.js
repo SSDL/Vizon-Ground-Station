@@ -46,9 +46,9 @@ exports.doRAPverify = function(rapbytes, callback) {
   }
   
   rap.length = rapbytes[2];
-  rap.to = utils.bytesToNumber(rapbytes[3],rapbytes[4]);
+  rap.to = utils_gs.bytesToNumber(rapbytes[3],rapbytes[4]);
   rap.toflags = rapbytes[5];
-  rap.from = utils.bytesToNumber(rapbytes[6],rapbytes[7]);
+  rap.from = utils_gs.bytesToNumber(rapbytes[6],rapbytes[7]);
   rap.fromflags = rapbytes[8];
   
   var tapbytes = rapbytes.slice(9,rapbytes.length-2);
@@ -56,12 +56,12 @@ exports.doRAPverify = function(rapbytes, callback) {
   var desc_typeid = 'TAP_' + tapbytes[0];
   exports.loadDescriptor(desc_typeid, function(tap_desc){
     if(app.db.descriptors[desc_typeid])
-      exports.doRAPtoTAP(tapbytes, tap_desc, callback);
+      exports.doRAPtoTAP(rap, tapbytes, tap_desc, callback);
   });
   
 }
 
-exports.doRAPtoTAP = function(tapbytes, tap_desc, callback) {
+exports.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
   var tap = { h: {}, p: [] }
   
   if(tapbytes.length != rap.length) {
@@ -74,7 +74,7 @@ exports.doRAPtoTAP = function(tapbytes, tap_desc, callback) {
   for(var i in tap_desc.h) {
     if(tap_desc.h[i].f) { // for each item in the tap header
       var bytesOfNumber = tapbytes.slice(bytecount, bytecount += tap_desc.h[i].l);
-      tap.h[tap_desc.h[i].f] = utils.bytesToNumber(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
+      tap.h[tap_desc.h[i].f] = utils_gs.bytesToNumber(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
     }
   }
   while(bytecount < rap.length-2) { // don't count the checksums yet
@@ -90,11 +90,11 @@ exports.doRAPtoTAP = function(tapbytes, tap_desc, callback) {
           var bytesOfNumber = tapbytes.slice(bytecount, bytecount += tap_desc.p[i].l);
           
           if(tap_desc.p[i].c == 'string') { // string
-            result = utils.bytesToString(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
+            result = utils_gs.bytesToString(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
           } else if(tap_desc.p[i].c == 'hex') { // hex string
-            result = utils.bytesToHex(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
+            result = utils_gs.bytesToHex(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
           } else { // number plain
-            result = utils.bytesToNumber(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
+            result = utils_gs.bytesToNumber(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
           }
           
         }
@@ -113,7 +113,7 @@ exports.doRAPtoTAP = function(tapbytes, tap_desc, callback) {
 exports.handleSerialRead = function(newdata) { // newdata can be either Buffer or Array. The extendArray function can handle either.
   utils_gs.extendArray(serialReadBuffer,newdata); // Push all buffer elements onto serialReadBuffer in place.
   var rapbytes = [];
-  if(serialReadBuffer.length = 11 + serialReadBuffer[2]) { // check if the number of bytes in the buffer equals the length of rap+payload
+  if(serialReadBuffer.length == 11 + serialReadBuffer[2]) { // check if the number of bytes in the buffer equals the length of rap+payload
     rapbytes = serialReadBuffer.splice(0,serialReadBuffer.length); // splice out all elements
   } else {
     for(var i = 1; i < serialReadBuffer.length-1; i++) { // Search for /next/ sync, marking end of rap. this is used for first sync or resync
@@ -125,9 +125,9 @@ exports.handleSerialRead = function(newdata) { // newdata can be either Buffer o
   }
   if(rapbytes.length) gs.doRAPverify(rapbytes, function(rap) {
     var tap = rap.tap;
-    tap.h.mid = rap.to;
-    event.emit('socket-send','tap',tap);
-    gs.logPacket(tap, 'TAP', 'to CC');
+    tap.h.mid = rap.from;
+    app.event.emit('socket-send','tap',tap);
+    utils.logPacket(tap, 'TAP', 'to CC');
   });
 }
 

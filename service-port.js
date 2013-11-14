@@ -32,6 +32,7 @@ module.exports = function(app) {
           }, false)
           .on('open', function() {
             clearInterval(portRetry);
+            clearTimeout(portRetry);
             event.emit('port-start');
             utils.logText('Serial port ' + testport.comName + ' opened');
           })
@@ -44,8 +45,8 @@ module.exports = function(app) {
             utils.logText('Serial port ' + testport.comName + ' error: ' + data, 'ERR');
           })
           .on('data', function(buf) {
-            event.emit('port-read',buf);
             utils.logText('Serial data');
+            event.emit('port-read',buf);
           });
           port.open();
         }
