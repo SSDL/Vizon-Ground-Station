@@ -62,24 +62,23 @@ exports.doRAPverify = function(rapbytes, callback) {
 }
 
 exports.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
-  var tap = { h: {}, p: [] }
-  
   if(tapbytes.length != rap.length) {
     utils.logText('RAP dropped - wrong length', 'INF', utils.colors.warn);
     return;
   }
   
   var bytecount = 0;
-  var packcount = 0;
+  var h = {};
   for(var i in tap_desc.h) {
     if(tap_desc.h[i].f) { // for each item in the tap header
       var bytesOfNumber = tapbytes.slice(bytecount, bytecount += tap_desc.h[i].l);
-      tap.h[tap_desc.h[i].f] = utils_gs.bytesToNumber(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
+      h[tap_desc.h[i].f] = utils_gs.bytesToNumber(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
     }
   }
-  while(bytecount < rap.length-2) { // don't count the checksums yet
+  h.t = 'TAP_' + h.t;
+  while(bytecount < rap.length-2) { // don't count the checksums yet, but we're going to loop over every pack in the tap
+    var tap = { h: h, p: {} }
     var result;
-    var pack = {};
     for(var i in tap_desc.p) {
       if(tap_desc.p[i].f) { // for each item in the tap repeatable elements
         if(tap_desc.p[i].l < 0) { // variable length data
@@ -99,14 +98,11 @@ exports.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
           
         }
       }
-      pack[tap_desc.p[i].f] = result;
+      tap.p[tap_desc.p[i].f] = result;
     }
-    tap.p[packcount++] = pack;
+    rap.tap = tap;
+    if(callback) callback(rap);
   }
-  tap.h.t = 'TAP_' + tap.h.t;
-  rap.tap = tap;
-  
-  if(callback) callback(rap);
 }
 
 
