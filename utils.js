@@ -38,3 +38,11 @@ utils.logPacket = function(packet, TYPE, text, hash) {
   if(!hash) hash = crypto.createHash('sha1').update(JSON.stringify(packet)).digest('hex');
   utils.log((utils.napcolors[TYPE] ? utils.napcolors[TYPE] : '') + TYPE + utils.colors.reset + ' ' + hash.substring(0,6) + ' ' + text, packet);
 }
+
+utils.clone = function(obj) {
+  var target = {};
+  for (var i in obj)
+    if (obj.hasOwnProperty(i))
+      target[i] = obj[i];
+  return target;
+}

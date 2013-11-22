@@ -41,8 +41,8 @@ module.exports = function(app) {
     callback(response);
   })
   .on('auth-pass', function() {
-    event.emit('socket-start', socket);
     utils.logText('from CC', 'AUTH PASS', utils.colors.ok);
+    event.emit('socket-start', socket);
   })
   .on('auth-fail', function() {
     utils.logText('from CC', 'AUTH FAIL', utils.colors.error);
@@ -50,14 +50,15 @@ module.exports = function(app) {
   
   // handle application socket events
   .on('relay', function(data) {
-    gs.handleSerialRead(data);
     utils.logText('from CC', 'RLY', utils.colors.warn);
+    gs.handleSerialRead(data);
   })
   .on('info', function(packet){
     utils.logPacket(packet, 'INF', 'from CC: ' + packet);
   })
   .on('cap', function(packet){
-    //gs.handleCAP(packet.p, 'CAP');
+    utils.logPacket(packet, 'CAP', 'from CC');
+    gs.handleCAP(packet); // add callback to ensure bytes written? or let TAP2 (cmd echo) handle that
   })
 
   socket.socket.connect(); // trust me, this is correct

@@ -71,18 +71,23 @@ module.exports = function() {
     return value
   }
 
-  utils.numberToBytes = function(arrayIn, number) {
-    var insertAt = arrayIn.length;
-    while(true) {
-      arrayIn.splice(insertAt, 0, number & 255);
-      if(number < 256) break;
-      number >>>= 8; // triple shift ensures non-negative result due to JS number size
+  utils.toBytes = function(arrayIn, input, length) {
+    if(typeof input == 'number') {
+      var insertAt = arrayIn.length;
+      while(true) {
+        arrayIn.splice(insertAt, 0, input & 255);
+        if(input < 256) break;
+        input >>>= 8; // triple shift ensures non-negative result due to JS number size
+      }
+    } else if(typeof input == 'string') {
+      for(var i = 0; i < input.length; i++) {
+        arrayIn.push(input.charCodeAt(i));
+      }
+    } else if(Array.isArray(input)) {
+      arrayIn = arrayIn.concat(input);
     }
-  }
-
-  utils.stringToBytes = function(arrayIn, string) {
-    for(var i = 0; i < string.length; i++) {
-      arrayIn.push(string.charCodeAt(i));
+    while(length && arrayIn.length < length && !Array.isArray(input)) {
+      arrayIn.splice(0,0,0);
     }
   }
     
