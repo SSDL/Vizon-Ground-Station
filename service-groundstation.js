@@ -68,6 +68,8 @@ exports.handleTAP = function(rapbytes, callback) {
 exports.handleCAP = function(cap, callback) {
   if(!(cap.h && cap.h.t)) {
     utils.logText('CAP dropped - no type field', 'INF', utils.colors.warn);
+    return;
+  }
   var desc_typeid = cap.h.t;
   exports.loadDescriptor(desc_typeid, function(cap_desc){
     if(app.db.descriptors[desc_typeid])

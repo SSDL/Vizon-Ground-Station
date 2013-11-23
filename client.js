@@ -1,6 +1,5 @@
 module.exports = function(){
   var app = {}
-    , look = require('look').start()
     ;
 
   require('./service-groundstation.js').init(app);
