@@ -70,9 +70,8 @@ exports.handleCAP = function(cap, callback) {
     utils.logText('CAP dropped - no type field', 'INF', utils.colors.warn);
     return;
   }
-  var desc_typeid = cap.h.t;
-  exports.loadDescriptor(desc_typeid, function(cap_desc){
-    if(app.db.descriptors[desc_typeid])
+  exports.loadDescriptor('CAP_'+cap.h.t, function(cap_desc){
+    if(app.db.descriptors['CAP_'+cap.h.t])
       exports.doCAPtoRAP(cap, cap_desc, function(capbytes){
         var rap = {};
         var rapbytes = [];
@@ -86,6 +85,8 @@ exports.handleCAP = function(cap, callback) {
         utils_gs.augmentChecksums(rap, rapbytes); 
         utils_gs.toBytes(rapbytes, rap.checksumA); // checksumA
         utils_gs.toBytes(rapbytes, rap.checksumB); // checksumB
+        
+        console.log(rapbytes);
       });
   });
   
@@ -105,7 +106,6 @@ exports.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
       h[tap_desc.h[i].f] = utils_gs.bytesToNumber(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
     }
   }
-  h.t = 'TAP_' + h.t;
   while(bytecount < rap.length-2) { // don't count the checksums yet, but we're going to loop over every pack in the tap
     var tap = { h: h, p: {} }
     var result;
@@ -140,11 +140,11 @@ exports.doCAPtoRAP = function(cap, cap_desc, callback) {
   var h = {};
   for(var i in cap_desc.h) {
     if(cap_desc.h[i].f) { // for each item in the cap header
-      if(!cap.h[cap_desc.h[i].f] || cap_desc.h[i].f == 'l') { // if a field is missing, and that field is not the cap length
-        utils.logText('CAP dropped - missing field ' + cap_desc.p[i].f, 'INF', utils.colors.warn);
+      if(!cap.h[cap_desc.h[i].f] && (cap_desc.h[i].f != 'l')) { // if a field is missing, and that field is not the cap length
+        utils.logText('CAP dropped - missing field ' + cap_desc.h[i].f, 'INF', utils.colors.warn);
         return;
       }
-      utils.toBytes(capbytes,cap.h[cap_desc.h[i].f], cap_desc.h[i].l); // convert the correct field to bytes (with padding) and push them on to capbytes
+      utils_gs.toBytes(capbytes,cap.h[cap_desc.h[i].f], cap_desc.h[i].l); // convert the correct field to bytes (with padding) and push them on to capbytes
     }
   }
   for(var i in cap_desc.p) {
