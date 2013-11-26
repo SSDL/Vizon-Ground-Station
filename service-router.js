@@ -1,6 +1,7 @@
 module.exports = function(app) {
   var event = app.event
     , gs = require('./service-groundstation.js')
+    , utils = require('./utils.js')
     , endpoints = {}
     ;
   
@@ -29,6 +30,9 @@ module.exports = function(app) {
   }
   
   function handlePortWrite(data){
-    endpoints.port.write(data);
+    endpoints.port.write(new Buffer(data), function(err, results) {
+      if(err) utils.log('err ' + err);
+      if(results != 0) utils.log('results ' + results);
+    });
   }
 }

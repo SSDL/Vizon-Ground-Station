@@ -33,7 +33,7 @@ module.exports = function(app) {
           .on('open', function() {
             clearInterval(portRetry);
             clearTimeout(portRetry);
-            event.emit('port-start');
+            event.emit('port-start', port);
             utils.logText('Serial port ' + testport.comName + ' opened');
           })
           .on('close', function(data) {

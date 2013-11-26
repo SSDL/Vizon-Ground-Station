@@ -85,8 +85,8 @@ exports.handleCAP = function(cap, callback) {
         utils_gs.augmentChecksums(rap, rapbytes); 
         utils_gs.toBytes(rapbytes, rap.checksumA); // checksumA
         utils_gs.toBytes(rapbytes, rap.checksumB); // checksumB
-        
         console.log(rapbytes);
+        app.event.emit('port-write',rapbytes);
       });
   });
   
@@ -144,7 +144,8 @@ exports.doCAPtoRAP = function(cap, cap_desc, callback) {
         utils.logText('CAP dropped - missing field ' + cap_desc.h[i].f, 'INF', utils.colors.warn);
         return;
       }
-      utils_gs.toBytes(capbytes,cap.h[cap_desc.h[i].f], cap_desc.h[i].l); // convert the correct field to bytes (with padding) and push them on to capbytes
+      if (cap_desc.h[i].f == 'l') continue;
+      utils_gs.toBytes(capbytes,cap.h[cap_desc.h[i].f], cap_desc.h[i].l); // convert the correct field to bytes (with padding) and push them on to 
     }
   }
   for(var i in cap_desc.p) {
@@ -153,10 +154,11 @@ exports.doCAPtoRAP = function(cap, cap_desc, callback) {
         utils.logText('CAP dropped - missing field ' + cap_desc.p[i].f, 'INF', utils.colors.warn);
         return;
       }
-      utils.toBytes(capbytes,cap.p[cap_desc.p[i].f], cap_desc.p[i].l); // convert the correct field to bytes (with padding) and push them on to capbytes
+      utils_gs.toBytes(capbytes,cap.p[cap_desc.p[i].f], cap_desc.p[i].l); // convert the correct field to bytes (with padding) and push them on to capbytes
     }
   }
-  utils_gs.augmentChecksums(cap, capbytes);
+  utils_gs.toBytes(capbytes, cap.checksumA); // checksumA
+  utils_gs.toBytes(capbytes, cap.checksumB); // checksumB
   capbytes.splice(1,0,capbytes.length+1); // splice the total cap bytes length (+1 for the length byte) into the cap bytes
   if(callback) callback(capbytes);
 }
@@ -180,8 +182,7 @@ exports.handleSerialRead = function(newdata) { // newdata can be either Buffer o
 
 
 exports.handleSerialWrite = function(data) { // Assumes data is buffer array of bytes.
-  console.log(data);
-  return;
+  //return;
   port.write(new Buffer(data), function(err, results) {
     if(err) utils.log('err ' + err);
     if(results != 0) utils.log('results ' + results);
