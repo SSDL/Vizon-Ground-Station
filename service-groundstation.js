@@ -157,9 +157,10 @@ exports.doCAPtoRAP = function(cap, cap_desc, callback) {
       utils_gs.toBytes(capbytes,cap.p[cap_desc.p[i].f], cap_desc.p[i].l); // convert the correct field to bytes (with padding) and push them on to capbytes
     }
   }
+  capbytes.splice(1,0,capbytes.length+3); // splice the total cap bytes length (+1 for the length byte, +2 for the checksums) into the cap bytes
+  utils_gs.augmentChecksums(cap, capbytes); 
   utils_gs.toBytes(capbytes, cap.checksumA); // checksumA
   utils_gs.toBytes(capbytes, cap.checksumB); // checksumB
-  capbytes.splice(1,0,capbytes.length+1); // splice the total cap bytes length (+1 for the length byte) into the cap bytes
   if(callback) callback(capbytes);
 }
 

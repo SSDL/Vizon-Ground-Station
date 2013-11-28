@@ -30,9 +30,9 @@ module.exports = function(app) {
   }
   
   function handlePortWrite(data){
-    endpoints.port.write(new Buffer(data), function(err, results) {
-      if(err) utils.log('err ' + err);
-      if(results != 0) utils.log('results ' + results);
+    endpoints.port.write(data, function(err, results) {
+      if(err) utils.log('Serial write error: ' + err);
+      if(results != 0) utils.logText('Serial data write - ' + results + ' bytes');
     });
   }
 }

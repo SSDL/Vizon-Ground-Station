@@ -45,7 +45,7 @@ module.exports = function(app) {
             utils.logText('Serial port ' + testport.comName + ' error: ' + data, 'ERR');
           })
           .on('data', function(buf) {
-            utils.logText('Serial data');
+            utils.logText('Serial data read - ' + buf.length + ' bytes');
             event.emit('port-read',buf);
           });
           port.open();
