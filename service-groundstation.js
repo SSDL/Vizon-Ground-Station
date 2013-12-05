@@ -79,7 +79,7 @@ exports.handleCAP = function(cap, callback) {
         utils_gs.toBytes(rapbytes, capbytes.length); // payload length
         utils_gs.toBytes(rapbytes, cap.h.mid); // to
         utils_gs.toBytes(rapbytes, 0); // to flags
-        utils_gs.toBytes(rapbytes, 0,2); // from
+        utils_gs.toBytes(rapbytes, 18765,2); // from
         utils_gs.toBytes(rapbytes, 0); // fromflags
         utils_gs.toBytes(rapbytes, capbytes);
         utils_gs.augmentChecksums(rap, rapbytes); 
@@ -112,7 +112,7 @@ exports.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
     for(var i in tap_desc.p) {
       if(tap_desc.p[i].f) { // for each item in the tap repeatable elements
         if(tap_desc.p[i].l < 0) { // variable length data
-          var datalength = (tapbytes.length-3) - bytecount;
+          var datalength = tapbytes.length - bytecount - 2;
           //if(tap_desc.c[i].c && tap_desc.c[i].c == 'string')
           result = tapbytes.slice(bytecount, bytecount += datalength).toString(); // slice out bytes from current marker to just before checksum, and increase bytecount
         } else {

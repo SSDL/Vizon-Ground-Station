@@ -25,7 +25,7 @@ module.exports = function(app) {
         //console.log('Port pnpid: ' + testport.pnpId);
         //console.log('Port mfgr: ' + testport.manufacturer);
         //console.log();
-        if(testport.comName == config.port || (testport.pnpId.indexOf(config.port.pid) >= 0 && testport.pnpId.indexOf(config.port.vid) >= 0)) {
+        if(testport.comName == config.port.name || (testport.pnpId.indexOf(config.port.pid) >= 0 && testport.pnpId.indexOf(config.port.vid) >= 0)) {
           port = new com.SerialPort(testport.comName, {
             baudrate: config.baud,
             parser: com.parsers.raw
