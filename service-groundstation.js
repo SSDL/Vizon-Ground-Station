@@ -113,19 +113,18 @@ exports.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
       if(tap_desc.p[i].f) { // for each item in the tap repeatable elements
         if(tap_desc.p[i].l < 0) { // variable length data
           var datalength = tapbytes.length - bytecount - 2;
-          //if(tap_desc.c[i].c && tap_desc.c[i].c == 'string')
-          result = tapbytes.slice(bytecount, bytecount += datalength).toString(); // slice out bytes from current marker to just before checksum, and increase bytecount
+          result = tapbytes.slice(bytecount, bytecount += datalength); // slice out bytes from current marker to just before checksum, and increase bytecount
         } else {
-          var bytesOfNumber = tapbytes.slice(bytecount, bytecount += tap_desc.p[i].l);
-          
-          if(tap_desc.p[i].c == 'string') { // string
-            result = utils_gs.bytesToString(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
-          } else if(tap_desc.p[i].c == 'hex') { // hex string
-            result = utils_gs.bytesToHex(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
-          } else { // number plain
-            result = utils_gs.bytesToNumber(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
-          }
-          
+          result = tapbytes.slice(bytecount, bytecount += tap_desc.p[i].l);
+        }
+        if(tap_desc.p[i].c == 'string') { // string
+          result = utils_gs.bytesToString(result); // slice out the correct number of bytes, form number, and increase bytecount
+        } else if(tap_desc.p[i].c == 'hex') { // hex string
+          result = utils_gs.bytesToHex(result); // slice out the correct number of bytes, form number, and increase bytecount
+        } else if(tap_desc.p[i].l < 0) { // array of decimal bytes
+          result = result.toString();
+        } else { // number plain
+          result = utils_gs.bytesToNumber(result); // slice out the correct number of bytes, form number, and increase bytecount
         }
       }
       tap.p[tap_desc.p[i].f] = result;
