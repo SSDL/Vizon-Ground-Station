@@ -46,7 +46,7 @@ module.exports = function() {
     var array = arguments;
     if(arguments.length == 1)  array = arguments[0];
     for(var k in array) {
-      value = (value << 8) + (array[k] >>> 0); // don't use << because large numbers roll over
+      value = ((value << 8) >>> 0) + (array[k] >>> 0); // careful with << because large numbers roll over
     }
     return value
   }
@@ -62,11 +62,12 @@ module.exports = function() {
   }
 
   utils.bytesToHex = function() {
-    var value = 0;
+    var value = '';
     var array = arguments;
     if(arguments.length == 1)  array = arguments[0];
     for(var k in array) {
-      value += (array[k] >>> 0).toString(16).toUpperCase();
+      var newval = (array[k] >>> 0).toString(16).toUpperCase();
+      value += (newval.length < 2 ? '0' : '') + newval;
     }
     return value
   }
