@@ -66,7 +66,7 @@ module.exports = function() {
     var array = arguments;
     if(arguments.length == 1)  array = arguments[0];
     for(var k in array) {
-      value += (array[k] >>> 0).toString(16);
+      value += (array[k] >>> 0).toString(16).toUpperCase();
     }
     return value
   }
