@@ -25,7 +25,8 @@ module.exports = function() {
       }
     }
   }
-
+  
+  // compare the checksums of the passed object at arg[0] with the checksums passed at arg[1,2]
   utils.verifyChecksums = function() {
     if(arguments.length < 3) return;
     var obj = arguments[0];
@@ -33,14 +34,8 @@ module.exports = function() {
     if(obj.checksumB === undefined) obj.checksumB = 0;
     return (obj.checksumA == (arguments[1] >>> 0) && obj.checksumB == (arguments[2] >>> 0)) ;
   }
-
-  // this is old code from first JS port
-  utils.check_TAP_checksum = function() {
-    var TAP = this.RAP.TAP;
-    if(TAP.currcksmA == TAP.sentcksmA && TAP.currcksmB == TAP.sentcksmB) return 0; // checksums matched
-    else return 1;
-  }
-
+  
+  // convert the input array of bytes into a single integer number
   utils.bytesToNumber = function() {
     var value = 0;
     var array = arguments;
@@ -50,7 +45,8 @@ module.exports = function() {
     }
     return value
   }
-
+  
+  // convert the input array of bytes into an ascii string
   utils.bytesToString = function() {
     var value = '';
     var array = arguments;
@@ -60,7 +56,8 @@ module.exports = function() {
     }
     return value
   }
-
+  
+  // convert the input array of bytes into a hex single
   utils.bytesToHex = function() {
     var value = '';
     var array = arguments;
@@ -71,7 +68,8 @@ module.exports = function() {
     }
     return value
   }
-
+  
+  // convert the input number, string, or array to a series of bytes, optionally padded to a specified length
   utils.toBytes = function(arrayIn, input, length) {
     var bytesAdded = 0;
     var insertAt = arrayIn.length;

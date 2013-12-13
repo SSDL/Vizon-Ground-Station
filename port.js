@@ -3,28 +3,33 @@ module.exports = function(app) {
     , com = require("serialport")
     , utils = require('./utils.js')
     , config = require('./config.js')
-    , gs = require('./service-groundstation.js')
     , port = {}
     ;
 
 
-  //   ----------------   Begin Port Setup   ----------------
+  // begin port setup
   var portRetry = setTimeout(portRetryFunc, 5000);
 
   function portRetryFunc() {
     utils.logText('Serial port unavailable', 'ERR');
+    if(config.dev) {
+      com.list(function (err, ports) {
+        if(config.dev) utils.logText('List of available ports:');
+        ports.forEach(function(testport) {
+          console.log('Port name: ' + testport.comName);
+          console.log('Port pnpid: ' + testport.pnpId);
+          console.log('Port mfgr: ' + testport.manufacturer);
+          console.log();
+        });
+      });
+    }
     portRetry = setInterval(portConnect, 5000);
     portConnect();
   }
 
   function portConnect() {
     com.list(function (err, ports) {
-      //utils.log('List of available ports:');
       ports.forEach(function(testport) {
-        //console.log('Port name: ' + testport.comName);
-        //console.log('Port pnpid: ' + testport.pnpId);
-        //console.log('Port mfgr: ' + testport.manufacturer);
-        //console.log();
         if(testport.comName == config.port.name || (testport.pnpId.indexOf(config.port.pid) >= 0 && testport.pnpId.indexOf(config.port.vid) >= 0)) {
           port = new com.SerialPort(testport.comName, {
             baudrate: config.baud,
@@ -55,7 +60,6 @@ module.exports = function(app) {
   }
 
   portConnect();
-  //   ----------------   End Port Setup   ----------------
   
   return port;
 }

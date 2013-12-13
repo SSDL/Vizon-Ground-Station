@@ -4,11 +4,11 @@ module.exports = function(app) {
     , crypto = require('crypto')
     , utils = require('./utils.js')
     , config = require('./config.js')
-    , gs = require('./service-groundstation.js')
+    , handle = require('./handlers.js')
     , socket = {}
     ;
 
-  //   ----------------   Begin Socket Setup   ----------------
+  // begin socket setup
   var socketRetry = setInterval(function() { // this is the only way to loop if not connected
     utils.logText('Control Center unavailable', 'ERR');
     socket.socket.connect();
@@ -25,9 +25,7 @@ module.exports = function(app) {
     utils.logText('Connection to CC closed', 'ERR');
     event.emit('socket-stop');
   })
-  //.on('connecting', function() { utils.logText('Connecting to CC...'); })
-  //.on('reconnecting', function() { utils.logText('Reconnecting to CC...'); })
-  //.on('reconnect', function() { utils.logText('Reconnected to CC'); })
+  // other possible standard socket events include 'connecting', 'reconnecting', 'reconnect'
   .on('connect_failed', function() { utils.logText('Connection to CC failed', 'ERR'); })
   .on('reconnect_failed', function() { utils.logText('Reconnection to CC failed', 'ERR'); })
   .on('error', function(err) { utils.logText('Socket ' + (config.dev && err ? err : ''), 'ERR'); })
@@ -51,18 +49,17 @@ module.exports = function(app) {
   // handle application socket events
   .on('relay', function(data) {
     utils.logText('from CC', 'RLY', utils.colors.warn);
-    gs.handleSerialRead(data);
+    handle.SerialRead(data);
   })
   .on('info', function(packet){
     utils.logPacket(packet, 'INF', 'from CC: ' + packet);
   })
   .on('cap', function(packet){
     utils.logPacket(packet, 'CAP', 'from CC');
-    gs.handleCAP(packet); // add callback to ensure bytes written? or let TAP2 (cmd echo) handle that
+    handle.CAP(packet); // add callback to ensure bytes written? or let TAP2 (cmd echo) handle that
   })
 
   socket.socket.connect(); // trust me, this is correct
-  //   ----------------   End Socket Setup   ----------------
   
   return socket;
 }

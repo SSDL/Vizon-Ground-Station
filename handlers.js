@@ -1,36 +1,44 @@
-var gs = exports
-  , app = {}
+var handle = exports
+  , event // placeholder that will be set to app.event on init
+  , db = { descriptors: { } }
   , utils = require('./utils.js')
   , utils_gs = require('./utils-gs.js')
   , config = require('./config.js')
   , serialReadBuffer = [];
   ;
-  
-exports.init = function(_app) {
-  app = _app;
-  app.db = { descriptors: { } };
-  app.event = new (require('events').EventEmitter);
+
+// initialize the handler's local variables
+handle.init = function(app) {
+  event = app.event
     
   console.log();
   utils.logText('Ground Station starting in ' + utils.colors.warn + config.env + utils.colors.reset+ ' mode', 'INF');
 }
 
-exports.loadDescriptor = function(desc_typeid, callback) {
-  if(app.db.descriptors[desc_typeid]) callback(app.db.descriptors[desc_typeid]);
+// this function returns the descriptor for a given packet descriptor typeid. if the
+// descriptor is not cached, it is retrieved from the server and passed to a callback.
+handle.loadDescriptor = function(desc_typeid, callback) {
+  if(db.descriptors[desc_typeid]) callback(db.descriptors[desc_typeid]);
   else {
-    app.event.emit('socket-send','descriptor-request', desc_typeid, function(new_descriptors) {
+    event.emit('socket-send','descriptor-request', desc_typeid, function(new_descriptors) {
       if(new_descriptors.length) {
         utils.logText('Descriptor ' + desc_typeid + ' retrieved from CC');
         for(var i in new_descriptors)
-          app.db.descriptors[desc_typeid] = new_descriptors[i];
-        callback(app.db.descriptors[desc_typeid]);
+          db.descriptors[desc_typeid] = new_descriptors[i];
+        callback(db.descriptors[desc_typeid]);
       } else
         utils.logText('RAP dropped - descriptor not available from CC');
     });
   }
 }
 
-exports.handleTAP = function(rapbytes, callback) {
+// process a set of bytes that represents a complete TAP. this includes verifying
+// TAP sync flags, length verification, and checksum validation. once the preliminary
+// validations are performed, the correct TAP descriptor is retrieved from cache or
+// requested from the control center. the TAP bytes are converted into an object according
+// to the descriptor, which is finally relayed to the control center. the actual TAP byte
+// conversion is handled by doRAPtoTAP().
+handle.TAP = function(rapbytes, callback) {
   var rap = {};
   
   if(rapbytes.length < 11) return; // This should protect all indexing below
@@ -39,7 +47,6 @@ exports.handleTAP = function(rapbytes, callback) {
     return
   }
   utils_gs.augmentChecksums(rap, rapbytes.slice(0, rapbytes.length-2)); 
-  //if((rap.checksumA != rapbytes[rapbytes.length-2]) || (rap.checksumB != rapbytes[rapbytes.length-1])) {
   if(!utils_gs.verifyChecksums(rap, rapbytes[rapbytes.length-2], rapbytes[rapbytes.length-1])) {
     utils.logText('TAP dropped - wrong RAP checksum', 'INF', utils.colors.warn);
     return;
@@ -54,25 +61,31 @@ exports.handleTAP = function(rapbytes, callback) {
   var tapbytes = rapbytes.slice(9,rapbytes.length-2);
   
   var desc_typeid = 'TAP_' + tapbytes[0];
-  exports.loadDescriptor(desc_typeid, function(tap_desc){
-    if(app.db.descriptors[desc_typeid])
-      exports.doRAPtoTAP(rap, tapbytes, tap_desc, function(tap) {
+  handle.loadDescriptor(desc_typeid, function(tap_desc){
+    if(db.descriptors[desc_typeid])
+      handle.doRAPtoTAP(rap, tapbytes, tap_desc, function(tap) {
         tap.h.mid = rap.from;
-        app.event.emit('socket-send','tap',tap);
+        event.emit('socket-send','tap',tap);
         utils.logPacket(tap, 'TAP', 'to CC');
       });
   });
   
 }
 
-exports.handleCAP = function(cap, callback) {
+// process a logical CAP object relayed from the control center. first off, the
+// correct CAP descriptor is retrieved from cache or is requested from the control
+// center. the CAP object is converted to a byte array according to this descriptor.
+// the RAP bytes are assembled, including sync flags, length, from, to, and CAP checksums.
+// the converted CAP bytes are embedded in the RAP bytes, and the final byte array is
+// written out to the serial port. the actual CAP byte conversion is handled by doCAPtoRAP()
+handle.CAP = function(cap, callback) {
   if(!(cap.h && cap.h.t)) {
     utils.logText('CAP dropped - no type field', 'INF', utils.colors.warn);
     return;
   }
-  exports.loadDescriptor('CAP_'+cap.h.t, function(cap_desc){
-    if(app.db.descriptors['CAP_'+cap.h.t])
-      exports.doCAPtoRAP(cap, cap_desc, function(capbytes){
+  handle.loadDescriptor('CAP_'+cap.h.t, function(cap_desc){
+    if(db.descriptors['CAP_'+cap.h.t])
+      handle.doCAPtoRAP(cap, cap_desc, function(capbytes){
         var rap = {};
         var rapbytes = [];
         utils_gs.toBytes(rapbytes, 0xABCD); // sync flag
@@ -86,13 +99,22 @@ exports.handleCAP = function(cap, callback) {
         utils_gs.toBytes(rapbytes, rap.checksumA); // checksumA
         utils_gs.toBytes(rapbytes, rap.checksumB); // checksumB
         console.log(rapbytes);
-        app.event.emit('port-write',rapbytes);
+        event.emit('port-write',rapbytes);
       });
   });
   
 }
 
-exports.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
+// this is the actual TAP byte-to-object conversion function. after verifying the TAP byte array length,
+// the TAP header is first processed. for each header field descriptor in the tap descriptor, extract the
+// number of bytes specified by the length field length and convert these bytes to a single number. no 
+// field conversions are usually specified for header fields. payload processing is capable of extracting 
+// multiple payload packs from a single TAP package, but these are each converted into individual TAPs for
+// relay to the control center. in a given pack, each payload field descriptor in the TAP descriptor is 
+// extracted by byte length just as was done with the header fields. if conversion fields are present for
+// a field, they are handled by special byte conversion utilities. the TAP object that has been assembled
+// in this process is passed to callback for relay to control center.
+handle.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
   if(tapbytes.length != rap.length) {
     utils.logText('TAP dropped - wrong length', 'INF', utils.colors.warn);
     return;
@@ -133,7 +155,15 @@ exports.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
   }
 }
 
-exports.doCAPtoRAP = function(cap, cap_desc, callback) {
+// this is the actual CAP byte-to-object conversion function. for every field descriptor in the CAP descriptor
+// header array, the specified field is extracted from the CAP object and converted to a byte array of the
+// correct length. any field missing results in a failed CAP unless specified for omission. the byte array
+// is appended to a running total CAP byte array in the conversion function. payload fields are processed in
+// the same way as header fields. there are no field omission options defined for payload fields. after
+// processing all header and payload fields from the cap descriptors, the remaining CAP overhead fields are
+// added. the byte array length is spliced into the cap byte array, and checksums are processed. the resulting
+// CAP byte array is passed to callback for serial port write out.
+handle.doCAPtoRAP = function(cap, cap_desc, callback) {
   var capbytes = [];
   var bytecount = 0;
   var h = {};
@@ -163,8 +193,12 @@ exports.doCAPtoRAP = function(cap, cap_desc, callback) {
   if(callback) callback(capbytes);
 }
 
-
-exports.handleSerialRead = function(newdata) { // newdata can be either Buffer or Array. The extendArray function can handle either.
+// when a new serial port event is raised, the new bytes are joined to any existing buffer of bytes not
+// previously processed, and  the buffer is assessed for either a collected byte count equal to the combined
+// length of the RAP overhead and payload (RAP byte 2), or the presence of a RAP sync flag (indicating
+// discardable bytes at the beginning of the array). Once a complete RAP byte array has been identified,
+// it is sliced out of the buffer and passed into TAP processing
+handle.SerialRead = function(newdata) { // newdata can be either Buffer or Array. The extendArray function can handle either.
   utils_gs.extendArray(serialReadBuffer,newdata); // Push all buffer elements onto serialReadBuffer in place.
   var rapbytes = [];
   if(serialReadBuffer.length == 11 + serialReadBuffer[2]) { // check if the number of bytes in the buffer equals the length of rap+payload
@@ -177,19 +211,14 @@ exports.handleSerialRead = function(newdata) { // newdata can be either Buffer o
       }
     }
   }
-  if(rapbytes.length) gs.handleTAP(rapbytes);
+  if(rapbytes.length) handle.TAP(rapbytes);
 }
 
-
-exports.handleSerialWrite = function(data) { // Assumes data is buffer array of bytes.
-  //return;
+// when byte arrays are ready to be written to serial, they are converted into a buffer data tye and passed
+// into the port writer. the results of serial write are the number of bytes written and any errors.
+handle.SerialWrite = function(data) {
   port.write(new Buffer(data), function(err, results) {
-    if(err) utils.log('err ' + err);
-    if(results != 0) utils.log('results ' + results);
+    if(err) utils.logText('Serial write error - ' + err, 'ERR');
+    utils.logText('Serial write success - ' + results + ' bytes written');
   });
-}
-
-
-
-exports.handleCMD = function(nap, text) {
 }
