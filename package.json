@@ -4,6 +4,6 @@
   "private": "true",
   "dependencies": {
     "socket.io-client": "~0.9.16",
-    "serialport": "~1.2.3"
+    "serialport": "~1.4.6"
   }
 }
