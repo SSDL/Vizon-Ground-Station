@@ -60,7 +60,7 @@ handle.TAP = function(rapbytes, callback) {
   
   var tapbytes = rapbytes.slice(9,rapbytes.length-2);
   
-  var desc_typeid = 'TAP_' + tapbytes[0];
+  var desc_typeid = String(rap.from) + '-' + 'TAP_' + tapbytes[0];
   handle.loadDescriptor(desc_typeid, function(tap_desc){
     if(db.descriptors[desc_typeid])
       handle.doRAPtoTAP(rap, tapbytes, tap_desc, function(tap) {
@@ -123,8 +123,8 @@ handle.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
   var bytecount = 0;
   var h = {};
   for(var i in tap_desc.h) {
-    if(tap_desc.h[i].f) { // for each item in the tap header
-      var bytesOfNumber = tapbytes.slice(bytecount, bytecount += tap_desc.h[i].l);
+    if(tap_desc.h[i].split(',')[0]) { // for each item in the tap header
+      var bytesOfNumber = tapbytes.slice(bytecount, bytecount += Number(tap_desc.h[i].split(',')[1]));
       h[tap_desc.h[i].f] = utils_gs.bytesToNumber(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
     }
   }
@@ -132,24 +132,25 @@ handle.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
     var tap = { h: h, p: {} }
     var result;
     for(var i in tap_desc.p) {
-      if(tap_desc.p[i].f) { // for each item in the tap repeatable elements
-        if(tap_desc.p[i].l < 0) { // variable length data
+    	var pack = tap_des.p[i].split(',');
+      if(pack[0]) { // for each item in the tap repeatable elements
+        if(Number(pack[1]) < 0) { // variable length data
           var datalength = tapbytes.length - bytecount - 2;
           result = tapbytes.slice(bytecount, bytecount += datalength); // slice out bytes from current marker to just before checksum, and increase bytecount
         } else {
-          result = tapbytes.slice(bytecount, bytecount += tap_desc.p[i].l);
+          result = tapbytes.slice(bytecount, bytecount += pack[1]);
         }
-        if(tap_desc.p[i].c == 'string') { // string
+        if(pack[2] == 'string') { // string
           result = utils_gs.bytesToString(result); // slice out the correct number of bytes, form number, and increase bytecount
-        } else if(tap_desc.p[i].c == 'hex') { // hex string
+        } else if(pack[2] == 'hex') { // hex string
           result = utils_gs.bytesToHex(result); // slice out the correct number of bytes, form number, and increase bytecount
-        } else if(tap_desc.p[i].l < 0) { // array of decimal bytes
+        } else if(Number(pack[1]) < 0) { // array of decimal bytes
           result = result.toString();
         } else { // number plain
           result = utils_gs.bytesToNumber(result); // slice out the correct number of bytes, form number, and increase bytecount
         }
       }
-      tap.p[tap_desc.p[i].f] = result;
+      tap.p[pack[0]] = result;
     }
     if(callback) callback(tap);
   }
@@ -169,11 +170,11 @@ handle.doCAPtoRAP = function(cap, cap_desc, callback) {
   var h = {};
   for(var i in cap_desc.h) {
     if(cap_desc.h[i].f) { // for each item in the cap header
-      if(!cap.h[cap_desc.h[i].f] && (cap_desc.h[i].f != 'l')) { // if a field is missing, and that field is not the cap length
+      if(!cap.h[cap_desc.h[i].f] && (cap_desc.h[i].f != 'Length')) { // if a field is missing, and that field is not the cap length
         utils.logText('CAP dropped - missing field ' + cap_desc.h[i].f, 'INF', utils.colors.warn);
         return;
       }
-      if (cap_desc.h[i].f == 'l') continue;
+      if (cap_desc.h[i].f == 'Length') continue;
       utils_gs.toBytes(capbytes,cap.h[cap_desc.h[i].f], cap_desc.h[i].l); // convert the correct field to bytes (with padding) and push them on to 
     }
   }
