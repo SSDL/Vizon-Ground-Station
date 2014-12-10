@@ -82,11 +82,7 @@ handle.TAP = function(rapbytes, callback) {
     return;
   }
   
-<<<<<<< HEAD
   var desc_typeid = String(rap.from) + '-' + 'TAP_' + tapbytes[0];
-=======
-  var desc_typeid = 'TAP_' + tapbytes[0];  // Get TAP Id
->>>>>>> aba5cdbe68c5e1cc8b434caa7cbd98446570d127
   handle.loadDescriptor(desc_typeid, function(tap_desc){
     if(db.descriptors[desc_typeid])
 			handle.doRAPtoTAP(rap, tapbytes, tap_desc, function(data, err) {
@@ -114,8 +110,8 @@ handle.CAP = function(cap, callback) {
     utils.logText('CAP dropped - no type field', 'INF', utils.colors.warn);
     return;
   }
-  handle.loadDescriptor('CAP_'+cap.h.t, function(cap_desc){
-    if(db.descriptors['CAP_'+cap.h.t])
+  handle.loadDescriptor(cap.h.t, function(cap_desc){
+    if(db.descriptors[cap.h.t])
       handle.doCAPtoRAP(cap, cap_desc, function(capbytes){
         var rap = {};
         var rapbytes = [];
@@ -166,11 +162,7 @@ handle.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
         } else {
           result = tapbytes.slice(bytecount, bytecount += pack[1]);
         }
-<<<<<<< HEAD
         if(pack[2] == 'string') { // string
-=======
-		if(tap_desc.p[i].c == 'string') { // string
->>>>>>> aba5cdbe68c5e1cc8b434caa7cbd98446570d127
           result = utils_gs.bytesToString(result); // slice out the correct number of bytes, form number, and increase bytecount
         } else if(pack[2] == 'hex') { // hex string
           result = utils_gs.bytesToHex(result); // slice out the correct number of bytes, form number, and increase bytecount
@@ -180,13 +172,11 @@ handle.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
           result = utils_gs.bytesToNumber(result); // slice out the correct number of bytes, form number, and increase bytecount
         }
       }
-<<<<<<< HEAD
       tap.p[pack[0]] = result;
     }
     if(callback) callback(tap);
   }
-=======
-      tap.p[tap_desc.p[i].f] = result;
+  /*
     } 
 	// Make sure our checksums match after extracting all the data
 		if(!utils_gs.verifyChecksums(rap, tapbytes[bytecount], tapbytes[bytecount + 1])) {
@@ -197,7 +187,7 @@ handle.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
 		}
   // }
 >>>>>>> aba5cdbe68c5e1cc8b434caa7cbd98446570d127
-}
+}*/
 
 // this is the actual CAP byte-to-object conversion function. for every field descriptor in the CAP descriptor
 // header array, the specified field is extracted from the CAP object and converted to a byte array of the
@@ -211,23 +201,26 @@ handle.doCAPtoRAP = function(cap, cap_desc, callback) {
   var capbytes = [];
   var bytecount = 0;
   var h = {};
-  for(var i in cap_desc.h) {
-    if(cap_desc.h[i].f) { // for each item in the cap header
-      if(!cap.h[cap_desc.h[i].f] && (cap_desc.h[i].f != 'Length')) { // if a field is missing, and that field is not the cap length
-        utils.logText('CAP dropped - missing field ' + cap_desc.h[i].f, 'INF', utils.colors.warn);
+  var header = cap_desc.missionId.CAPHeader;
+  for(var i in header) {
+  	var cap_item = header[i].split(',');
+    if(cap_item[0]) { // for each item in the cap header
+      if(!cap.h[cap_item[0].trim()] && (cap_item[0].trim() != 'Length')) { // if a field is missing, and that field is not the cap length
+        utils.logText('CAP dropped - missing field ' + cap_item[0].trim(), 'INF', utils.colors.warn);
         return;
       }
-      if (cap_desc.h[i].f == 'Length') continue;
-      utils_gs.toBytes(capbytes,cap.h[cap_desc.h[i].f], cap_desc.h[i].l); // convert the correct field to bytes (with padding) and push them on to 
+      if (cap_item[0].trim() == 'Length') continue;
+      utils_gs.toBytes(capbytes,cap.h[cap_item[0].trim()], parseInt(cap_item[1].trim())); // convert the correct field to bytes (with padding) and push them on to 
     }
   }
-  for(var i in cap_desc.p) {
-    if(cap_desc.p[i].f) { // for each item in the cap header
-      if(!cap.p[cap_desc.p[i].f]) { // if a field is missing
-        utils.logText('CAP dropped - missing field ' + cap_desc.p[i].f, 'INF', utils.colors.warn);
+  for(var i in cap_desc.package) {
+  	cap_item = cap_desc.package[i].split(',');
+    if(cap_item[0]) { // for each item in the cap header
+      if(!cap.p[cap_item[0].trim()]) { // if a field is missing
+        utils.logText('CAP dropped - missing field ' + cap_item[0].trim(), 'INF', utils.colors.warn);
         return;
       }
-      utils_gs.toBytes(capbytes,cap.p[cap_desc.p[i].f], cap_desc.p[i].l); // convert the correct field to bytes (with padding) and push them on to capbytes
+      utils_gs.toBytes(capbytes,cap.p[cap_item[0].trim()], parseInt(cap_item[1].trim())); // convert the correct field to bytes (with padding) and push them on to capbytes
     }
   }
   capbytes.splice(1,0,capbytes.length+3); // splice the total cap bytes length (+1 for the length byte, +2 for the checksums) into the cap bytes
