@@ -12,7 +12,7 @@ module.exports = function() {
     var obj = arguments[0];
     if(obj.checksumA === undefined) obj.checksumA = 0;
     if(obj.checksumB === undefined) obj.checksumB = 0;
-    if(typeof arguments[1] === 'object') {
+    if(typeof arguments[1] === 'object') { // Seems to always fall in here
       var array = arguments[1];
       for(var k = 0; k < arguments[1].length; k++) {
         obj.checksumA = (obj.checksumA + (array[k] >>> 0)) % 256;

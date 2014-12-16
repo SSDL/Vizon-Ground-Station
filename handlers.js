@@ -4,9 +4,26 @@ var handle = exports
   , utils = require('./utils.js')
   , utils_gs = require('./utils-gs.js')
   , config = require('./config.js')
-  , serialReadBuffer = [];
+  , serialReadBuffer = []
+	, storeLocally = true;
   ;
+	// Mongoose local database
+  var mongoose = require('mongoose');
+  mongoose.connect('mongodb://localhost/vizongs')
+  var mon = mongoose.connection;
+  mon.on('error',console.error.bind(console,'connection error:'));
+  mon.once('open',function callback(){
+		utils.logText('DB Connection established');
+  });
+  
+	RAPModel = mongoose.Schema({
+		rap: [],
+		_id: mongoose.Schema.Types.ObjectId,
+	}, {versionKey: false, id: false});
+	mon.model('Rap', RAPModel, 'RAPS');
+ 
 
+handle.storeLocally = true;
 // initialize the handler's local variables
 handle.init = function(app) {
   event = app.event
@@ -40,7 +57,6 @@ handle.loadDescriptor = function(desc_typeid, callback) {
 // conversion is handled by doRAPtoTAP().
 handle.TAP = function(rapbytes, callback) {
   var rap = {};
-  
   if(rapbytes.length < 11) return; // This should protect all indexing below
   if(rapbytes[0] != 0xAB || rapbytes[1] != 0xCD) {
     utils.logText('RAP dropped - wrong preamble', 'INF', utils.colors.warn);
@@ -52,21 +68,32 @@ handle.TAP = function(rapbytes, callback) {
     return;
   }
   
-  rap.length = rapbytes[2];
-  rap.to = utils_gs.bytesToNumber(rapbytes[3],rapbytes[4]);
+	rap.rapbytes = rapbytes;
+  rap.length = rapbytes[2];  // Length of TAP
+  rap.to = utils_gs.bytesToNumber(rapbytes[3],rapbytes[4]);  // Converts 3, 4 into one 2 byte int
   rap.toflags = rapbytes[5];
-  rap.from = utils_gs.bytesToNumber(rapbytes[6],rapbytes[7]);
+  rap.from = utils_gs.bytesToNumber(rapbytes[6],rapbytes[7]);  // Converts 6,7 into one 2 byte int
   rap.fromflags = rapbytes[8];
   
-  var tapbytes = rapbytes.slice(9,rapbytes.length-2);
+  var tapbytes = rapbytes.slice(9,rapbytes.length-2);  // Extract the TAP data from the RAP
+  
+  if(tapbytes.length != rap.length) { // Rap.length was defines as length(TAP)
+    utils.logText('TAP dropped - wrong length', 'INF', utils.colors.warn);
+    return;
+  }
   
   var desc_typeid = String(rap.from) + '-' + 'TAP_' + tapbytes[0];
   handle.loadDescriptor(desc_typeid, function(tap_desc){
     if(db.descriptors[desc_typeid])
-      handle.doRAPtoTAP(rap, tapbytes, tap_desc, function(tap) {
-        tap.h.mid = rap.from;
-        event.emit('socket-send','tap',tap);
-        utils.logPacket(tap, 'TAP', 'to CC');
+			handle.doRAPtoTAP(rap, tapbytes, tap_desc, function(data, err) {
+				if (err) {
+					if (!handle.storeLocally)
+						handle.storeDataLocally(data, true);
+				} else {
+					tap.h.mid = rap.from;
+					event.emit('socket-send','tap',data);
+					utils.logPacket(tap, 'TAP', 'to CC');
+				}
       });
   });
   
@@ -83,8 +110,8 @@ handle.CAP = function(cap, callback) {
     utils.logText('CAP dropped - no type field', 'INF', utils.colors.warn);
     return;
   }
-  handle.loadDescriptor('CAP_'+cap.h.t, function(cap_desc){
-    if(db.descriptors['CAP_'+cap.h.t])
+  handle.loadDescriptor(cap.h.t, function(cap_desc){
+    if(db.descriptors[cap.h.t])
       handle.doCAPtoRAP(cap, cap_desc, function(capbytes){
         var rap = {};
         var rapbytes = [];
@@ -98,7 +125,6 @@ handle.CAP = function(cap, callback) {
         utils_gs.augmentChecksums(rap, rapbytes); 
         utils_gs.toBytes(rapbytes, rap.checksumA); // checksumA
         utils_gs.toBytes(rapbytes, rap.checksumB); // checksumB
-        console.log(rapbytes);
         event.emit('port-write',rapbytes);
       });
   });
@@ -115,11 +141,6 @@ handle.CAP = function(cap, callback) {
 // a field, they are handled by special byte conversion utilities. the TAP object that has been assembled
 // in this process is passed to callback for relay to control center.
 handle.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
-  if(tapbytes.length != rap.length) {
-    utils.logText('TAP dropped - wrong length', 'INF', utils.colors.warn);
-    return;
-  }
-  
   var bytecount = 0;
   var h = {};
   for(var i in tap_desc.h) {
@@ -128,7 +149,8 @@ handle.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
       h[tap_desc.h[i].f] = utils_gs.bytesToNumber(bytesOfNumber); // slice out the correct number of bytes, form number, and increase bytecount
     }
   }
-  while(bytecount < rap.length-2) { // don't count the checksums yet, but we're going to loop over every pack in the tap
+  // While loop commented out.  At this point in time I really don't see any use for it.
+  // while(bytecount < rap.length-2) { // don't count the checksums yet, but we're going to loop over every pack in the tap
     var tap = { h: h, p: {} }
     var result;
     for(var i in tap_desc.p) {
@@ -154,7 +176,18 @@ handle.doRAPtoTAP = function(rap, tapbytes, tap_desc, callback) {
     }
     if(callback) callback(tap);
   }
-}
+  /*
+    } 
+	// Make sure our checksums match after extracting all the data
+		if(!utils_gs.verifyChecksums(rap, tapbytes[bytecount], tapbytes[bytecount + 1])) {
+      utils.logText('TAP dropped - wrong RAP checksum', 'INF', utils.colors.warn);
+			if (callback) callback(rap.rapbytes, true);
+    } else {
+			if(callback) callback(tap);
+		}
+  // }
+>>>>>>> aba5cdbe68c5e1cc8b434caa7cbd98446570d127
+}*/
 
 // this is the actual CAP byte-to-object conversion function. for every field descriptor in the CAP descriptor
 // header array, the specified field is extracted from the CAP object and converted to a byte array of the
@@ -168,23 +201,26 @@ handle.doCAPtoRAP = function(cap, cap_desc, callback) {
   var capbytes = [];
   var bytecount = 0;
   var h = {};
-  for(var i in cap_desc.h) {
-    if(cap_desc.h[i].f) { // for each item in the cap header
-      if(!cap.h[cap_desc.h[i].f] && (cap_desc.h[i].f != 'Length')) { // if a field is missing, and that field is not the cap length
-        utils.logText('CAP dropped - missing field ' + cap_desc.h[i].f, 'INF', utils.colors.warn);
+  var header = cap_desc.missionId.CAPHeader;
+  for(var i in header) {
+  	var cap_item = header[i].split(',');
+    if(cap_item[0]) { // for each item in the cap header
+      if(!cap.h[cap_item[0].trim()] && (cap_item[0].trim() != 'Length')) { // if a field is missing, and that field is not the cap length
+        utils.logText('CAP dropped - missing field ' + cap_item[0].trim(), 'INF', utils.colors.warn);
         return;
       }
-      if (cap_desc.h[i].f == 'Length') continue;
-      utils_gs.toBytes(capbytes,cap.h[cap_desc.h[i].f], cap_desc.h[i].l); // convert the correct field to bytes (with padding) and push them on to 
+      if (cap_item[0].trim() == 'Length') continue;
+      utils_gs.toBytes(capbytes,cap.h[cap_item[0].trim()], parseInt(cap_item[1].trim())); // convert the correct field to bytes (with padding) and push them on to 
     }
   }
-  for(var i in cap_desc.p) {
-    if(cap_desc.p[i].f) { // for each item in the cap header
-      if(!cap.p[cap_desc.p[i].f]) { // if a field is missing
-        utils.logText('CAP dropped - missing field ' + cap_desc.p[i].f, 'INF', utils.colors.warn);
+  for(var i in cap_desc.package) {
+  	cap_item = cap_desc.package[i].split(',');
+    if(cap_item[0]) { // for each item in the cap header
+      if(!cap.p[cap_item[0].trim()]) { // if a field is missing
+        utils.logText('CAP dropped - missing field ' + cap_item[0].trim(), 'INF', utils.colors.warn);
         return;
       }
-      utils_gs.toBytes(capbytes,cap.p[cap_desc.p[i].f], cap_desc.p[i].l); // convert the correct field to bytes (with padding) and push them on to capbytes
+      utils_gs.toBytes(capbytes,cap.p[cap_item[0].trim()], parseInt(cap_item[1].trim())); // convert the correct field to bytes (with padding) and push them on to capbytes
     }
   }
   capbytes.splice(1,0,capbytes.length+3); // splice the total cap bytes length (+1 for the length byte, +2 for the checksums) into the cap bytes
@@ -212,7 +248,14 @@ handle.SerialRead = function(newdata) { // newdata can be either Buffer or Array
       }
     }
   }
-  if(rapbytes.length) handle.TAP(rapbytes);
+  if(rapbytes.length) {
+		// log data here 
+		if (handle.storeLocally) {
+			handle.storeDataLocally(rapbytes);
+		} else {
+			handle.TAP(rapbytes);
+		}
+	}
 }
 
 // when byte arrays are ready to be written to serial, they are converted into a buffer data tye and passed
@@ -223,3 +266,28 @@ handle.SerialWrite = function(data) {
     utils.logText('Serial write success - ' + results + ' bytes written');
   });
 }
+
+handle.storeDataLocally = function(data, bad) {
+	var ObjectID = require('mongodb').ObjectID;
+	var RAP = {
+		rap: data,
+		_id: new ObjectID()
+	};
+	var actionStr = "Data Stored Locally";
+	if ( bad ) {
+		mon.collection('badRAPS').insert(RAP, function(err, db) { if (err) {console.log("MAJOR MONGO ERROR (GS)")} });
+		actionStr+= " into badRAPS";
+	} else {
+		mon.collection('RAPS').insert(RAP, function(err, db) { if (err) {console.log("MAJOR MONGO ERROR (GS)")} });
+		actionStr+= " into RAPS";
+	}
+	utils.logText(actionStr);
+}
+
+handle.uploadStoredData = function() {
+	var stream = mon.models.Rap.find().stream();
+	stream.on('data', function(data) {
+		handle.TAP(data.rap)
+		data.remove();
+	});
+};

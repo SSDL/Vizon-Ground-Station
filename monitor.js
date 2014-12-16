@@ -24,24 +24,26 @@ module.exports = function(app) {
   // When the port connects, enable the serial port writer
   event.on('port-start', function(port){                       
     endpoints.port = port;
-    event.on('port-write', handle.PortWrite);
+    event.on('port-read', handle.SerialRead);
+		event.on('port-write', handle.PortWrite);
   });
   
   // When the port disconnects, disable the serial port writer
-  event.on('port-stop', function(){                             
+  event.on('port-stop', function(){    
+		event.removeListener('port-read', handle.SerialRead);
     event.removeListener('port-write', handle.PortWrite);
   });
   
   // When the socket connects, enable the port reader and socket sender
   event.on('socket-start', function(socket){                   
     endpoints.socket = socket;
-    event.on('port-read', handle.SerialRead);
+    //event.on('port-read', handle.SerialRead);
     event.on('socket-send', handle.SocketSend);
   });
   
   // When the socket disconnects, disable the port reader and socket sender
   event.on('socket-stop', function(){                           
-    event.removeListener('port-read', handle.SerialRead);
+    //event.removeListener('port-read', handle.SerialRead);
     event.removeListener('socket-send', handle.SocketSend);
   });
 }
