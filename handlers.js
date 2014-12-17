@@ -32,6 +32,13 @@ handle.init = function(app) {
   utils.logText('Ground Station starting in ' + utils.colors.warn + config.env + utils.colors.reset+ ' mode', 'INF');
 }
 
+
+handle.deleteDescriptor = function(desc_typeid) {
+	if (db.descriptors[desc_typeid]) {
+		delete db.descriptors[desc_typeid];
+	}
+}
+
 // this function returns the descriptor for a given packet descriptor typeid. if the
 // descriptor is not cached, it is retrieved from the server and passed to a callback.
 handle.loadDescriptor = function(desc_typeid, callback) {

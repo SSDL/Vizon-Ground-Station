@@ -64,7 +64,10 @@ module.exports = function(app) {
     utils.logPacket(packet, 'CAP', 'from CC');
     handle.CAP(packet); // add callback to ensure bytes written? or let TAP2 (cmd echo) handle that
   })
-
+  .on('removedesc', function(desc_typeid) {
+  	utils.logText('from CC' + desc_typeid, 'RMVPCKT', utils.colors.warn);
+		handle.deleteDescriptor(desc_typeid);
+	})
   socket.socket.connect(); // trust me, this is correct
   
   return socket;
