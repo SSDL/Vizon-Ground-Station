@@ -5,7 +5,7 @@ module.exports = function(app) {
     , utils = require('./utils.js')
     , config = require('./config.js')
     , handle = require('./handlers.js')
-		, text_belt = require('./textbelt.js')
+		//, text_belt = require('./textbelt.js')
     , socket = {}
     ;
 
@@ -25,8 +25,8 @@ module.exports = function(app) {
   .on('disconnect', function() {
     utils.logText('Connection to CC closed', 'ERR');
 		handle.storeLocally = true;
-		text_belt.send('7168302024','Vizon Control Center Disconnected.  From: testGS',function(){});
-		text_belt.send('6179994071','Vizon Control Center Disconnected.  From: testGS',function(){});
+		//text_belt.send('7168302024','Vizon Control Center Disconnected.  From: testGS',function(){});
+		//text_belt.send('6179994071','Vizon Control Center Disconnected.  From: testGS',function(){});
     event.emit('socket-stop');
   })
   // other possible standard socket events include 'connecting', 'reconnecting', 'reconnect'
